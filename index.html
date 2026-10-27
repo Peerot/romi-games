@@ -1,0 +1,1790 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>משחק השעון של רומי</title>
+<style>
+  :root{
+    --bg1:#aee7ff; --bg2:#fff3b0; --bg3:#ffd6ec;
+    --card:#ffffff; --ink:#22304a; --ink-soft:#5a6a8a;
+    --coral:#ff6b6b; --coral-d:#e14e4e;
+    --sun:#ffc93c; --sun-d:#f0a818;
+    --teal:#2ec4b6; --teal-d:#1a9c8f;
+    --grape:#7c6ff0; --grape-d:#5f52d6;
+    --pink:#ff8fab; --pink-d:#ef6d94;
+    --shadow:0 10px 30px rgba(34,48,74,.16);
+    --radius:26px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg1:#1d2b52; --bg2:#3a2a5e; --bg3:#173a4d;
+      --card:#26314f; --ink:#f4f7ff; --ink-soft:#b9c6e8;
+      --shadow:0 10px 30px rgba(0,0,0,.45);
+    }
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family: ui-rounded, "SF Pro Rounded", "Varela Round", "Heebo", "Segoe UI", system-ui, sans-serif;
+    color:var(--ink);
+    background: linear-gradient(160deg, var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%);
+    background-attachment: fixed;
+    min-height:100dvh;
+    overflow-x:hidden;
+  }
+  /* floating sky decorations */
+  .sky{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0;}
+  .sky span{position:absolute; font-size:0; border-radius:50%; opacity:.55;}
+  .cloud{position:absolute; background:#fff; border-radius:999px; opacity:.75; filter:blur(1px);}
+  .cloud::before,.cloud::after{content:""; position:absolute; background:#fff; border-radius:50%;}
+  @media (prefers-color-scheme: dark){ .cloud{opacity:.14;} }
+  .c1{width:110px;height:34px; top:6%; inset-inline-start:6%; animation:drift 26s linear infinite;}
+  .c1::before{width:52px;height:52px; top:-26px; inset-inline-start:16px;}
+  .c1::after{width:36px;height:36px; top:-16px; inset-inline-start:56px;}
+  .c2{width:80px;height:26px; top:16%; inset-inline-start:70%; animation:drift 34s linear infinite reverse;}
+  .c2::before{width:40px;height:40px; top:-20px; inset-inline-start:12px;}
+  .c2::after{width:28px;height:28px; top:-12px; inset-inline-start:44px;}
+  @keyframes drift{from{transform:translateX(0)}50%{transform:translateX(-26px)}to{transform:translateX(0)}}
+
+  .wrap{position:relative; z-index:1; max-width:560px; margin:0 auto; padding:14px 14px 40px;}
+
+  /* ---------- header ---------- */
+  header.top{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;}
+  h1{font-size:clamp(24px,6.4vw,34px); margin:0; font-weight:900; letter-spacing:.2px;}
+  h1 .clk-emoji{display:inline-block; animation:swing 3.2s ease-in-out infinite; transform-origin:top center;}
+  @keyframes swing{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+  .stars-pill{
+    display:flex; align-items:center; gap:8px; background:var(--card);
+    border-radius:999px; padding:8px 16px; box-shadow:var(--shadow);
+    font-size:24px; font-weight:900; min-height:52px; white-space:nowrap;
+  }
+  .stars-pill .star-ic{width:28px;height:28px; flex:none;}
+  .stars-pill.pop{animation:pop .45s cubic-bezier(.2,2.2,.4,1);}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.18) rotate(-3deg)}100%{transform:scale(1)}}
+
+  /* ---------- mode tabs ---------- */
+  .modes{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0 12px;}
+  .mode-btn{
+    border:4px solid transparent; background:var(--card); color:var(--ink);
+    border-radius:22px; padding:12px 4px 10px; cursor:pointer; box-shadow:var(--shadow);
+    font-family:inherit; font-weight:900; font-size:clamp(15px,4.2vw,19px);
+    display:flex; flex-direction:column; align-items:center; gap:6px; min-height:92px;
+    transition:transform .15s ease, border-color .15s ease;
+  }
+  .mode-btn:active{transform:scale(.96);}
+  .mode-btn svg{width:34px;height:34px;}
+  .mode-btn[data-mode="quiz"].active{border-color:var(--coral);}
+  .mode-btn[data-mode="pick"].active{border-color:var(--pink-d);}
+  .mode-btn[data-mode="set"].active{border-color:var(--teal);}
+  .mode-btn[data-mode="free"].active{border-color:var(--grape);}
+
+  /* ---------- hub tabs (clock games / logic games) ---------- */
+  .hub{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:4px 0 12px;}
+  .hub-btn{
+    border:4px solid transparent; cursor:pointer; font-family:inherit; color:#fff;
+    border-radius:24px; padding:13px 6px 11px; font-weight:900; font-size:clamp(17px,4.8vw,21px);
+    display:flex; flex-direction:column; align-items:center; gap:5px; min-height:84px;
+    transition:transform .15s ease, filter .15s ease;
+  }
+  .hub-btn svg{width:36px;height:36px;}
+  .hub-btn small{font-size:.72em; font-weight:800; opacity:.92;}
+  .hub-btn[data-hub="clock"]{background:var(--coral); box-shadow:0 6px 0 var(--coral-d);}
+  .hub-btn[data-hub="logic"]{background:var(--grape); box-shadow:0 6px 0 var(--grape-d);}
+  .hub-btn[data-hub="math"]{background:var(--teal); box-shadow:0 6px 0 var(--teal-d);}
+  .hub-btn[data-hub="read"]{background:#f4842b; box-shadow:0 6px 0 #d96f1d;}
+  .hub-btn:not(.active){filter:saturate(.35) brightness(1.06); opacity:.75;}
+  .hub-btn:active{transform:translateY(3px);}
+  .mode-btn.active{transform:scale(1.03);}
+
+  /* ---------- levels ---------- */
+  .levels{display:flex; gap:10px; margin-bottom:14px;}
+  .level-btn{
+    flex:1; border:3px solid transparent; border-radius:999px; cursor:pointer;
+    padding:10px 4px; font-family:inherit; font-weight:900; font-size:clamp(14px,3.9vw,17px);
+    background:var(--card); color:var(--ink-soft); box-shadow:var(--shadow); min-height:58px;
+    transition:all .15s ease;
+  }
+  .level-btn small{display:block; font-size:.78em; font-weight:700; letter-spacing:2px;}
+  .level-btn.active{background:var(--sun); color:#4a3200; border-color:var(--sun-d);}
+  .levels.hidden{display:none;}
+
+  /* ---------- mascot + bubble ---------- */
+  .mascot-row{display:flex; align-items:flex-end; gap:10px; margin-bottom:6px;}
+  .mascot{width:96px; height:96px; flex:none; animation:bob 2.6s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .mascot.happy{animation:jump .6s cubic-bezier(.2,2,.4,1) 2;}
+  @keyframes jump{0%{transform:translateY(0)}35%{transform:translateY(-22px) rotate(-4deg)}70%{transform:translateY(0)}85%{transform:translateY(-10px)}100%{transform:translateY(0)}}
+  .bubble{
+    position:relative; flex:1; background:var(--card); border-radius:22px; box-shadow:var(--shadow);
+    padding:14px 16px; font-size:clamp(19px,5.2vw,24px); font-weight:800; line-height:1.35; min-height:74px;
+    display:flex; align-items:center;
+  }
+  .bubble::after{
+    content:""; position:absolute; bottom:18px; inset-inline-start:-10px;
+    border:12px solid transparent; border-inline-end-color:var(--card); border-top:0; border-bottom:0;
+    transform:rotate(0deg);
+  }
+  [dir="rtl"] .bubble::after{border-inline-end-color:transparent; border-inline-start-color:var(--card); inset-inline-start:auto; inset-inline-end:-10px;}
+
+  /* ---------- clock card ---------- */
+  .clock-card{
+    background:var(--card); border-radius:34px; box-shadow:var(--shadow);
+    padding:16px 12px 14px; text-align:center; position:relative; overflow:hidden;
+  }
+  .clock-wrap{position:relative; width:min(86vw, 400px); margin:0 auto;}
+  svg#clock{width:100%; height:auto; display:block; touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none;}
+  svg#clock:active{cursor:grabbing;}
+  .hand{pointer-events:none;}
+  .num{font-weight:900; fill:var(--ink); pointer-events:none;}
+  .tick{stroke:var(--ink-soft);}
+
+  .readout{
+    margin-top:6px; display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;
+  }
+  .digital{
+    font-size:clamp(34px,10vw,48px); font-weight:900; letter-spacing:2px; direction:ltr;
+    background:linear-gradient(180deg, var(--bg2), transparent); border-radius:16px; padding:2px 18px;
+    font-variant-numeric:tabular-nums;
+  }
+  .words{font-size:clamp(20px,5.6vw,27px); font-weight:900; color:var(--teal-d);}
+  @media (prefers-color-scheme: dark){ .words{color:var(--teal);} }
+  .speak-btn{
+    border:none; cursor:pointer; background:var(--grape); color:#fff; font-family:inherit;
+    font-weight:900; font-size:19px; border-radius:999px; padding:12px 22px; min-height:56px;
+    box-shadow:0 6px 0 var(--grape-d); display:inline-flex; align-items:center; gap:8px;
+  }
+  .speak-btn:active{transform:translateY(4px); box-shadow:0 2px 0 var(--grape-d);}
+  .speak-btn svg{width:24px;height:24px;}
+
+  /* target banner (set mode) */
+  .target{
+    display:none; margin:0 auto 10px; background:var(--sun); color:#4a3200; border-radius:20px;
+    padding:10px 14px; font-weight:900; box-shadow:var(--shadow);
+    align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
+  }
+  .target.show{display:flex;}
+  .target .t-label{font-size:19px;}
+  .target .t-time{direction:ltr; font-size:38px; letter-spacing:2px; line-height:1;}
+  .target .t-words{font-size:21px;}
+
+  /* ---------- answers ---------- */
+  .answers{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:10px; margin-top:14px;}
+  .answers.hidden{display:none;}
+  .ans-btn{
+    border:4px solid transparent; border-radius:24px; cursor:pointer; font-family:inherit;
+    min-width:0; overflow:hidden;
+    padding:14px 4px 12px; min-height:104px; box-shadow:var(--shadow); color:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    transition:transform .15s ease;
+  }
+  .ans-btn:active{transform:scale(.95);}
+  .ans-btn .a-time{direction:ltr; font-size:clamp(23px,6.6vw,31px); font-weight:900; letter-spacing:0; line-height:1.05; white-space:nowrap;}
+  .ans-btn .a-words{font-size:clamp(13px,3.6vw,16px); font-weight:800; opacity:.95; line-height:1.2;}
+  .ans-btn.c0{background:var(--coral);} .ans-btn.c1{background:var(--teal);} .ans-btn.c2{background:var(--grape);}
+  .ans-btn.correct{animation:correctPulse .6s ease; border-color:#fff;}
+  @keyframes correctPulse{0%{transform:scale(1)}40%{transform:scale(1.12) rotate(-2deg)}100%{transform:scale(1)}}
+  .ans-btn.wrong{animation:wiggle .5s ease;}
+  @keyframes wiggle{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px) rotate(-2deg)}40%{transform:translateX(9px) rotate(2deg)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+
+  /* big action button */
+  .big-action{
+    display:none; width:100%; margin-top:14px; border:none; cursor:pointer; font-family:inherit;
+    background:var(--teal); color:#fff; font-size:26px; font-weight:900; border-radius:24px;
+    padding:18px; min-height:72px; box-shadow:0 7px 0 var(--teal-d);
+  }
+  .big-action.show{display:block;}
+  .big-action:active{transform:translateY(5px); box-shadow:0 2px 0 var(--teal-d);}
+
+  .hint{margin-top:12px; font-size:16px; font-weight:700; color:var(--ink-soft); text-align:center; line-height:1.45;}
+
+  /* level-up banner */
+  .levelup{
+    display:none; margin-top:14px; background:var(--card); border:4px dashed var(--sun-d);
+    border-radius:24px; padding:16px; text-align:center; box-shadow:var(--shadow);
+  }
+  .levelup.show{display:block; animation:pop .5s cubic-bezier(.2,2.2,.4,1);}
+  .levelup p{margin:0 0 12px; font-size:21px; font-weight:900;}
+  .levelup button{
+    border:none; cursor:pointer; font-family:inherit; background:var(--coral); color:#fff;
+    font-size:20px; font-weight:900; border-radius:999px; padding:13px 26px; min-height:56px;
+    box-shadow:0 5px 0 var(--coral-d);
+  }
+  .levelup button:active{transform:translateY(3px); box-shadow:0 2px 0 var(--coral-d);}
+
+  /* confetti pieces */
+  .confetti{position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden;}
+  .confetti i{position:absolute; top:-4%; display:block; border-radius:3px;}
+
+  /* earned stars row */
+  .round-stars{display:flex; justify-content:center; gap:6px; margin-top:12px; min-height:30px;}
+  .round-stars svg{width:30px;height:30px; opacity:.18; filter:grayscale(1); transition:all .3s;}
+  .round-stars svg.on{opacity:1; filter:none; animation:pop .5s cubic-bezier(.2,2.4,.4,1);}
+
+  /* ---------- pick-the-clock game ---------- */
+  .pick-area{display:none; margin-top:4px;}
+  .pick-area.show{display:block;}
+  .pick-prompt{
+    display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:12px;
+  }
+  .pick-prompt .p-label{font-size:20px; font-weight:900;}
+  .pick-prompt .p-time{
+    direction:ltr; font-size:40px; font-weight:900; letter-spacing:2px; line-height:1;
+    background:var(--sun); color:#4a3200; border-radius:16px; padding:6px 16px;
+  }
+  .pick-prompt .p-words{font-size:22px; font-weight:900; color:var(--teal-d);}
+  @media (prefers-color-scheme: dark){ .pick-prompt .p-words{color:var(--teal);} }
+  .pick-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;}
+  .pick-btn{
+    border:4px solid transparent; border-radius:24px; cursor:pointer; background:var(--bg2);
+    padding:8px 6px 6px; box-shadow:var(--shadow); transition:transform .15s ease; min-width:0;
+  }
+  @media (prefers-color-scheme: dark){ .pick-btn{background:#1c2745;} }
+  .pick-btn:active{transform:scale(.95);}
+  .pick-btn svg{width:100%; height:auto; display:block;}
+  .pick-btn.correct{animation:correctPulse .6s ease; border-color:var(--teal);}
+  .pick-btn.wrong{animation:wiggle .5s ease; border-color:var(--coral);}
+
+  /* ---------- logic game: seating order ---------- */
+  .logic-card{
+    display:none; background:var(--card); border-radius:34px; box-shadow:var(--shadow);
+    padding:16px 12px 14px; position:relative; overflow:hidden;
+  }
+  .logic-card.show{display:block;}
+  .logic-title{font-size:clamp(21px,5.6vw,26px); font-weight:900; text-align:center; margin:2px 0 4px;}
+  .logic-sub{text-align:center; color:var(--ink-soft); font-weight:700; font-size:15px; margin:0 0 12px; line-height:1.45;}
+  .logic-levels{display:flex; gap:10px; margin-bottom:12px;}
+  .logic-levels .level-btn.active{background:var(--grape); color:#fff; border-color:var(--grape-d);}
+
+  .clues{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;}
+  .clues-head{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .clues-head h3{margin:0; font-size:18px; font-weight:900;}
+  .clues-head .speak-btn{padding:8px 16px; min-height:46px; font-size:16px;}
+  .clue{
+    display:flex; align-items:center; gap:10px; background:var(--bg2); border-radius:18px;
+    padding:9px 12px; font-size:clamp(16px,4.4vw,19px); font-weight:800; line-height:1.35;
+    border:3px solid transparent;
+  }
+  @media (prefers-color-scheme: dark){ .clue{background:#1c2745;} }
+  .clue .clue-ic{width:30px; height:30px; flex:none;}
+  .clue.broken{border-color:var(--coral); animation:wiggle .5s ease;}
+  .kid-name{display:inline-block; padding:1px 10px; border-radius:999px; color:#fff; font-weight:900; white-space:nowrap;}
+
+  .scene{
+    position:relative; border-radius:26px; padding:16px 10px 12px; overflow:hidden;
+    background:linear-gradient(180deg, #bdeaff 0%, #d8f7e8 62%, #a8e063 62.2%, #8fd14f 100%);
+  }
+  @media (prefers-color-scheme: dark){
+    .scene{background:linear-gradient(180deg, #22335f 0%, #1d4038 62%, #2c5b23 62.2%, #244d1c 100%);}
+  }
+  .scene .sun-deco{position:absolute; top:10px; inset-inline-end:14px; width:44px; height:44px;}
+  .scene .tree-deco{position:absolute; bottom:34%; inset-inline-start:2px; width:64px; height:88px; opacity:.95;}
+  .chairs{position:relative; display:flex; gap:8px; justify-content:center; z-index:1;}
+  .chair{
+    flex:1; max-width:118px; min-width:0; border:none; cursor:pointer; background:transparent; font-family:inherit;
+    display:flex; flex-direction:column; align-items:center; gap:0; padding:0;
+  }
+  .chair .seat{
+    width:100%; aspect-ratio:.92; border-radius:20px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.55); border:3px dashed rgba(34,48,74,.35); position:relative; overflow:hidden;
+  }
+  @media (prefers-color-scheme: dark){ .chair .seat{background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.4);} }
+  .chair.filled .seat{background:#fff; border:3px solid #fff; box-shadow:0 6px 14px rgba(34,48,74,.22);}
+  .chair .seat svg.kid{width:88%; height:88%;}
+  .chair .seat svg.chair-ic{width:52%; height:52%; opacity:.55;}
+  .chair .chair-num{
+    margin-top:5px; background:var(--ink); color:#fff; font-weight:900; font-size:14px;
+    border-radius:999px; min-width:26px; padding:2px 8px; line-height:1.3;
+  }
+  .chair.filled:active{transform:scale(.96);}
+  .bench{height:16px; border-radius:8px; margin:10px 6px 0; background:repeating-linear-gradient(90deg,#b07a45 0 46px,#9c683a 46px 50px); box-shadow:0 4px 0 rgba(90,55,20,.35);}
+
+  .tray{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px; min-height:104px;}
+  .tray-empty{color:var(--ink-soft); font-weight:800; font-size:16px; align-self:center;}
+  .kid-chip{
+    border:4px solid transparent; cursor:pointer; background:var(--bg2); font-family:inherit;
+    border-radius:22px; padding:7px 10px 5px; box-shadow:var(--shadow); min-width:86px;
+    display:flex; flex-direction:column; align-items:center; gap:1px; transition:transform .15s ease;
+  }
+  @media (prefers-color-scheme: dark){ .kid-chip{background:#1c2745;} }
+  .kid-chip svg{width:56px; height:66px;}
+  .kid-chip .k-name{font-size:17px; font-weight:900; color:var(--ink);}
+  .kid-chip.selected{border-color:var(--sun-d); transform:scale(1.07) rotate(-2deg); background:var(--sun);}
+  .kid-chip.selected .k-name{color:#4a3200;}
+  .kid-chip:active{transform:scale(.95);}
+
+  .logic-actions{display:flex; gap:10px; margin-top:14px;}
+  .ghost-btn{
+    flex:1; border:3px solid var(--ink-soft); background:transparent; color:var(--ink); cursor:pointer;
+    font-family:inherit; font-weight:900; font-size:17px; border-radius:999px; padding:11px 6px; min-height:54px;
+  }
+  .ghost-btn:active{transform:scale(.96);}
+  .logic-check{display:block !important;}
+
+  /* ---------- math & reading games ---------- */
+  .math-card,.read-card{
+    display:none; background:var(--card); border-radius:34px; box-shadow:var(--shadow);
+    padding:16px 12px 14px; position:relative; overflow:hidden;
+  }
+  .math-card.show,.read-card.show{display:block;}
+  .game-title{font-size:clamp(21px,5.6vw,26px); font-weight:900; text-align:center; margin:2px 0 4px;}
+  .game-sub{text-align:center; color:var(--ink-soft); font-weight:700; font-size:15px; margin:0 0 12px; line-height:1.45;}
+  .stage{
+    background:var(--bg2); border-radius:22px; padding:16px 10px 12px; margin-bottom:6px; text-align:center;
+  }
+  @media (prefers-color-scheme: dark){ .stage{background:#1c2745;} }
+  .eq{font-size:clamp(40px,12vw,58px); font-weight:900; text-align:center; direction:ltr; line-height:1.15; font-variant-numeric:tabular-nums;}
+  .eq .qmark{color:var(--coral);}
+  .counters{display:flex; flex-wrap:wrap; gap:5px; justify-content:center; align-items:center; margin:8px 0 2px;}
+  .counters svg{width:40px; height:40px;}
+  .counter-group{display:flex; flex-wrap:wrap; gap:4px; justify-content:center; align-items:center; max-width:44%;}
+  .plus-sign{font-size:36px; font-weight:900; margin:0 8px; color:var(--ink);}
+  .big-word{font-size:clamp(42px,13vw,62px); font-weight:900; text-align:center; letter-spacing:3px; line-height:1.25;}
+  .big-word .blank{color:var(--coral); border-bottom:6px dashed var(--coral); padding:0 6px;}
+  .big-pic{text-align:center; font-size:clamp(76px,24vw,110px); line-height:1.15;}
+  .pic-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:14px;}
+  .pic-btn{
+    border:4px solid transparent; border-radius:24px; cursor:pointer; background:var(--bg2);
+    font-size:clamp(46px,13vw,64px); line-height:1.1; padding:14px 4px; min-height:108px;
+    box-shadow:var(--shadow); transition:transform .15s ease; font-family:inherit;
+  }
+  @media (prefers-color-scheme: dark){ .pic-btn{background:#1c2745;} }
+  .pic-btn:active{transform:scale(.95);}
+  .pic-btn.correct{animation:correctPulse .6s ease; border-color:var(--teal);}
+  .pic-btn.wrong{animation:wiggle .5s ease; border-color:var(--coral);}
+  .word-btn .a-time{font-size:clamp(24px,6.8vw,34px); letter-spacing:1px; direction:rtl;}
+  .letter-btn .a-time{font-size:clamp(34px,10vw,46px);}
+  .stage .speak-btn{margin-top:10px;}
+
+  footer{margin-top:18px; text-align:center; color:var(--ink-soft); font-weight:700; font-size:14px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;}
+  }
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true">
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <h1><span class="clk-emoji" aria-hidden="true">🕐</span> משחק השעון של רומי</h1>
+    <div class="stars-pill" id="starsPill" aria-label="כוכבים שצברת">
+      <svg class="star-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="#ffc93c" stroke="#f0a818" stroke-width="1.4" d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg>
+      <span id="starCount">0</span>
+    </div>
+  </header>
+
+  <!-- Game families -->
+  <div class="hub" role="group" aria-label="בחירת סוג משחק">
+    <button class="hub-btn active" data-hub="clock" id="hubClock" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="#fff"/><circle cx="24" cy="24" r="19" fill="none" stroke="#e14e4e" stroke-width="3"/><path d="M24 14v10l7 4" stroke="#22304a" stroke-width="3.6" fill="none" stroke-linecap="round"/><circle cx="24" cy="24" r="2.6" fill="#22304a"/></svg>
+      משחקי שעון
+      <small>לקרוא שעון בכיף</small>
+    </button>
+    <button class="hub-btn" data-hub="logic" id="hubLogic" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="15" cy="17" r="7" fill="#fff"/><circle cx="33" cy="17" r="7" fill="#ffd9b3"/><path d="M6 40c0-6 4-9 9-9s9 3 9 9z" fill="#fff"/><path d="M24 40c0-6 4-9 9-9s9 3 9 9z" fill="#ffd9b3"/><path d="M13 15a2 2 0 104 0M29 15a2 2 0 104 0" stroke="#22304a" stroke-width="2.4" stroke-linecap="round"/></svg>
+      משחקי הגיון
+      <small>מי יושב ליד מי?</small>
+    </button>
+    <button class="hub-btn" data-hub="math" id="hubMath" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="6" width="36" height="36" rx="10" fill="#fff"/><text x="15" y="24" text-anchor="middle" font-size="17" font-weight="900" fill="#1a9c8f">+</text><text x="33" y="24" text-anchor="middle" font-size="17" font-weight="900" fill="#e14e4e">−</text><text x="15" y="40" text-anchor="middle" font-size="17" font-weight="900" fill="#f0a818">×</text><text x="33" y="40" text-anchor="middle" font-size="17" font-weight="900" fill="#5f52d6">=</text></svg>
+      משחקי חשבון
+      <small>סופרים ומחברים בכיף</small>
+    </button>
+    <button class="hub-btn" data-hub="read" id="hubRead" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 12c-3.4-2.6-8-3.6-14-3.4v29c6-.2 10.6.8 14 3.4 3.4-2.6 8-3.6 14-3.4v-29c-6-.2-10.6.8-14 3.4z" fill="#fff"/><path d="M24 12v29" stroke="#d96f1d" stroke-width="2.6"/><path d="M14 16c2.4-.1 4.4.3 6 1.2M14 23c2.4-.1 4.4.3 6 1.2M28 17.2c1.6-.9 3.6-1.3 6-1.2M28 24.2c1.6-.9 3.6-1.3 6-1.2" stroke="#22304a" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+      משחקי קריאה
+      <small>אותיות ומילים ראשונות</small>
+    </button>
+  </div>
+
+  <!-- Modes -->
+  <nav class="modes" aria-label="מצבי משחק">
+    <button class="mode-btn active" data-mode="quiz" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="#ff6b6b"/><text x="24" y="33" text-anchor="middle" font-size="26" font-weight="900" fill="#fff">?</text></svg>
+      מה השעה?
+    </button>
+    <button class="mode-btn" data-mode="pick" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="17" cy="24" r="12" fill="#ff8fab"/><path d="M17 17v7l5 3" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round"/><circle cx="35" cy="24" r="12" fill="#38a3d1"/><path d="M35 17v7l-5 3" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round"/></svg>
+      איזה שעון נכון?
+    </button>
+    <button class="mode-btn" data-mode="set" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="#2ec4b6"/><path d="M24 13v11l8 5" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/><circle cx="24" cy="24" r="3.4" fill="#fff"/></svg>
+      שימי את השעון
+    </button>
+    <button class="mode-btn" data-mode="free" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5l3.6 8.4L36 10l-2.6 8.9L42 23l-8.6 4.1L36 36l-8.4-3.4L24 41l-3.6-8.4L12 36l2.6-8.9L6 23l8.6-4.1L12 10l8.4 3.4z" fill="#7c6ff0"/><circle cx="24" cy="23" r="5" fill="#fff"/></svg>
+      משחק חופשי
+    </button>
+  </nav>
+
+  <!-- Levels -->
+  <div class="levels" id="levelsBar" role="group" aria-label="רמת קושי">
+    <button class="level-btn active" data-level="1" type="button">רמה 1<small>★ ☆ ☆</small>שעות שלמות</button>
+    <button class="level-btn" data-level="2" type="button">רמה 2<small>★ ★ ☆</small>גם וחצי</button>
+    <button class="level-btn" data-level="3" type="button">רמה 3<small>★ ★ ★</small>גם ורבע</button>
+  </div>
+
+  <!-- Mascot -->
+  <div class="mascot-row">
+    <svg class="mascot" id="mascot" viewBox="0 0 120 120" role="img" aria-label="טיקי הינשוף">
+      <ellipse cx="60" cy="104" rx="30" ry="7" fill="rgba(34,48,74,.12)"/>
+      <path d="M28 30 L18 8 L44 18 Z" fill="#7c6ff0"/>
+      <path d="M92 30 L102 8 L76 18 Z" fill="#7c6ff0"/>
+      <circle cx="60" cy="58" r="42" fill="#8f83f5"/>
+      <ellipse cx="60" cy="76" rx="24" ry="20" fill="#efeaff"/>
+      <g id="eyes">
+        <circle cx="45" cy="52" r="10" fill="#fff"/><circle cx="75" cy="52" r="10" fill="#fff"/>
+        <circle class="pupil" cx="45" cy="54" r="5" fill="#22304a"/><circle class="pupil" cx="75" cy="54" r="5" fill="#22304a"/>
+        <circle cx="47" cy="52" r="1.8" fill="#fff"/><circle cx="77" cy="52" r="1.8" fill="#fff"/>
+      </g>
+      <g id="eyesHappy" style="display:none">
+        <path d="M36 54 Q45 44 54 54" stroke="#22304a" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M66 54 Q75 44 84 54" stroke="#22304a" stroke-width="4" fill="none" stroke-linecap="round"/>
+      </g>
+      <path d="M54 62 L66 62 L60 70 Z" fill="#ffc93c" stroke="#f0a818" stroke-width="1.5" stroke-linejoin="round"/>
+      <path id="mouth" d="M50 78 Q60 85 70 78" stroke="#22304a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <circle cx="33" cy="66" r="6" fill="#ff8fab" opacity=".8"/>
+      <circle cx="87" cy="66" r="6" fill="#ff8fab" opacity=".8"/>
+      <path d="M22 62 Q8 56 12 44" stroke="#7c6ff0" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M98 62 Q112 56 108 44" stroke="#7c6ff0" stroke-width="7" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="bubble" id="bubble">שלום רומי! בואי נשחק עם השעון 🎉</div>
+  </div>
+
+  <!-- Target (set mode) -->
+  <div class="target" id="targetBar">
+    <span class="t-label">שימי את השעון על:</span>
+    <span class="t-time" id="targetTime">3:00</span>
+    <span class="t-words" id="targetWords">שלוש</span>
+    <button class="speak-btn" id="targetSpeak" type="button" style="padding:8px 16px; min-height:48px; font-size:16px;">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M4 9v6h4l6 5V4L8 9H4z"/><path d="M17 8.5a5 5 0 010 7M19.5 6a8.5 8.5 0 010 12" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      שמעי
+    </button>
+  </div>
+
+  <!-- Clock -->
+  <section class="clock-card" aria-label="שעון">
+    <div class="clock-wrap">
+      <svg id="clock" viewBox="0 0 360 360" role="img" aria-label="שעון אנלוגי">
+        <defs>
+          <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ff8fab"/><stop offset=".5" stop-color="#ffc93c"/><stop offset="1" stop-color="#2ec4b6"/>
+          </linearGradient>
+        </defs>
+        <circle cx="180" cy="180" r="172" fill="url(#rim)"/>
+        <circle cx="180" cy="180" r="156" fill="#fffdf5" id="faceBg"/>
+        <g id="ticks"></g>
+        <g id="numbers"></g>
+        <!-- minute hand -->
+        <g class="hand" id="minuteHand">
+          <path d="M180 180 L171 168 L180 62 L189 168 Z" fill="#2ec4b6" stroke="#1a9c8f" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="180" cy="66" r="9" fill="#2ec4b6" stroke="#1a9c8f" stroke-width="2"/>
+        </g>
+        <!-- hour hand -->
+        <g class="hand" id="hourHand">
+          <path d="M180 180 L168 166 L180 96 L192 166 Z" fill="#ff6b6b" stroke="#e14e4e" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="180" cy="100" r="10" fill="#ff6b6b" stroke="#e14e4e" stroke-width="2"/>
+        </g>
+        <circle cx="180" cy="180" r="15" fill="#ffc93c" stroke="#f0a818" stroke-width="3"/>
+        <circle cx="180" cy="180" r="5" fill="#fff"/>
+      </svg>
+    </div>
+
+    <div class="readout" id="readout">
+      <div>
+        <div class="digital" id="digital">3:00</div>
+        <div class="words" id="timeWords">השעה שלוש</div>
+      </div>
+      <button class="speak-btn" id="speakBtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M4 9v6h4l6 5V4L8 9H4z"/><path d="M17 8.5a5 5 0 010 7M19.5 6a8.5 8.5 0 010 12" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        מה השעה?
+      </button>
+    </div>
+
+    <!-- Pick-the-clock game -->
+    <div class="pick-area" id="pickArea">
+      <div class="pick-prompt">
+        <span class="p-label">איזה שעון מראה</span>
+        <span class="p-time" id="pickTime">3:30</span>
+        <span class="p-words" id="pickWords">שלוש וחצי</span>
+        <button class="speak-btn" id="pickSpeak" type="button" style="padding:8px 16px; min-height:48px; font-size:16px;">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M4 9v6h4l6 5V4L8 9H4z"/><path d="M17 8.5a5 5 0 010 7M19.5 6a8.5 8.5 0 010 12" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          שמעי
+        </button>
+      </div>
+      <div class="pick-grid" id="pickGrid"></div>
+    </div>
+
+    <div class="round-stars" id="roundStars" aria-hidden="true"></div>
+
+    <div class="answers" id="answers"></div>
+
+    <button class="big-action" id="checkBtn" type="button">✓ בדקי אותי!</button>
+
+    <div class="levelup" id="levelUp">
+      <p id="levelUpText">מדהים! סיימת את הרמה! 🌟</p>
+      <button id="levelUpBtn" type="button">לרמה הבאה ←</button>
+    </div>
+
+    <p class="hint" id="hint">גררי את המחוגים עם האצבע! המחוג האדום הקצר = שעות, המחוג הירוק הארוך = דקות.</p>
+  </section>
+
+  <!-- Logic game: seating order -->
+  <section class="logic-card" id="logicCard" aria-label="משחק הגיון: סדר ישיבה">
+    <h2 class="logic-title">🪑 מי יושב ליד מי?</h2>
+    <p class="logic-sub">קראי את הרמזים, וחשבי: באיזה סדר הילדים צריכים לשבת על הספסל?<br>הקישי על ילד, ואז על הכיסא שלו.</p>
+
+    <div class="logic-levels" role="group" aria-label="רמת קושי במשחק ההגיון">
+      <button class="level-btn active" data-llevel="1" type="button">רמה 1<small>★ ☆ ☆</small>3 ילדים</button>
+      <button class="level-btn" data-llevel="2" type="button">רמה 2<small>★ ★ ☆</small>4 ילדים</button>
+    </div>
+
+    <div class="clues-head">
+      <h3>🔍 הרמזים</h3>
+      <button class="speak-btn" id="cluesSpeak" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M4 9v6h4l6 5V4L8 9H4z"/><path d="M17 8.5a5 5 0 010 7M19.5 6a8.5 8.5 0 010 12" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        שמעי את הרמזים
+      </button>
+    </div>
+    <div class="clues" id="cluesBox"></div>
+
+    <div class="scene" aria-label="ספסל הישיבה">
+      <svg class="sun-deco" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="10" fill="#ffc93c" stroke="#f0a818" stroke-width="2"/><g stroke="#f0a818" stroke-width="3" stroke-linecap="round"><path d="M24 3v6M24 39v6M3 24h6M39 24h6M9 9l4 4M35 35l4 4M39 9l-4 4M13 35l-4 4"/></g></svg>
+      <svg class="tree-deco" viewBox="0 0 64 88" aria-hidden="true"><rect x="28" y="52" width="9" height="34" rx="4" fill="#9c683a"/><circle cx="32" cy="26" r="24" fill="#3fae5a"/><circle cx="14" cy="40" r="13" fill="#57c46e"/><circle cx="50" cy="40" r="13" fill="#2f9448"/><circle cx="24" cy="22" r="3.4" fill="#ff6b6b"/><circle cx="42" cy="30" r="3.4" fill="#ff6b6b"/></svg>
+      <div class="chairs" id="chairsBox"></div>
+      <div class="bench" aria-hidden="true"></div>
+    </div>
+
+    <div class="tray" id="trayBox" aria-label="הילדים שמחכים"></div>
+
+    <div class="round-stars" id="logicStars" aria-hidden="true"></div>
+
+    <button class="big-action logic-check" id="logicCheck" type="button">✓ בדקי אותי!</button>
+
+    <div class="logic-actions">
+      <button class="ghost-btn" id="logicNew" type="button">🎲 חידה חדשה</button>
+      <button class="ghost-btn" id="logicClear" type="button">↺ התחילי מחדש</button>
+    </div>
+
+    <div class="levelup" id="logicLevelUp">
+      <p id="logicLevelUpText">מדהים! אספת 5 כוכבים במשחקי ההגיון! 🌟</p>
+      <button id="logicLevelUpBtn" type="button">עוד חידה ←</button>
+    </div>
+
+    <p class="hint">רמז לרמזים: «רק ליד» אומר שהילד יושב בקצה הספסל, ויש לו רק שכן אחד. «לא ליד» אומר שהם לא שכנים בכלל.</p>
+  </section>
+
+  <!-- Math game -->
+  <section class="math-card" id="mathCard" aria-label="משחק חשבון">
+    <h2 class="game-title">🔢 חשבון בכיף</h2>
+    <p class="game-sub">סופרים, מחברים ומחסרים — בדיוק כמו במטיפיק, עם תמונות שעוזרות לספור.</p>
+
+    <div class="logic-levels" role="group" aria-label="רמת קושי בחשבון">
+      <button class="level-btn active" data-mlevel="1" type="button">רמה 1<small>★ ☆ ☆</small>סופרים עד 10</button>
+      <button class="level-btn" data-mlevel="2" type="button">רמה 2<small>★ ★ ☆</small>חיבור עם תמונות</button>
+      <button class="level-btn" data-mlevel="3" type="button">רמה 3<small>★ ★ ★</small>חיבור, חיסור ומספר חסר</button>
+    </div>
+
+    <div class="stage" id="mathStage"></div>
+
+    <div class="round-stars" id="mathStars" aria-hidden="true"></div>
+
+    <div class="answers" id="mathAnswers"></div>
+
+    <div class="levelup" id="mathLevelUp">
+      <p id="mathLevelUpText">מדהים! אספת 5 כוכבים בחשבון! 🌟</p>
+      <button id="mathLevelUpBtn" type="button">לרמה הבאה ←</button>
+    </div>
+
+    <p class="hint">טיפ: אפשר לספור את התמונות אחת-אחת עם האצבע!</p>
+  </section>
+
+  <!-- Reading game -->
+  <section class="read-card" id="readCard" aria-label="משחק קריאה">
+    <h2 class="game-title">📖 קוראים מילים ראשונות</h2>
+    <p class="game-sub">מתחילים מהאות הראשונה, וממשיכים לקריאת מילים שלמות.</p>
+
+    <div class="logic-levels" role="group" aria-label="רמת קושי בקריאה">
+      <button class="level-btn active" data-rlevel="1" type="button">רמה 1<small>★ ☆ ☆</small>האות הראשונה</button>
+      <button class="level-btn" data-rlevel="2" type="button">רמה 2<small>★ ★ ☆</small>קוראים מילה</button>
+      <button class="level-btn" data-rlevel="3" type="button">רמה 3<small>★ ★ ★</small>מוצאים את המילה</button>
+    </div>
+
+    <div class="stage" id="readStage"></div>
+
+    <div class="round-stars" id="readStars" aria-hidden="true"></div>
+
+    <div id="readAnswers"></div>
+
+    <div class="levelup" id="readLevelUp">
+      <p id="readLevelUpText">מדהים! אספת 5 כוכבים בקריאה! 🌟</p>
+      <button id="readLevelUpBtn" type="button">לרמה הבאה ←</button>
+    </div>
+
+    <p class="hint">אפשר ללחוץ על כפתור השמיעה כדי לשמוע את המילה בקול.</p>
+  </section>
+
+  <footer>נבנה באהבה לרומי 💛 · אפשר לשחק גם בלי אינטרנט</footer>
+</div>
+
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =================== Hebrew time words =================== */
+var HOUR_WORDS = ["שתים עשרה","אחת","שתיים","שלוש","ארבע","חמש","שש","שבע","שמונה","תשע","עשר","אחת עשרה"];
+function hourWord(h){ return HOUR_WORDS[h % 12]; }
+function timeWords(h, m){
+  if (m === 0)  return hourWord(h);
+  if (m === 15) return hourWord(h) + " ורבע";
+  if (m === 30) return hourWord(h) + " וחצי";
+  if (m === 45) return "רבע ל" + hourWord(h + 1);
+  if (m < 30)   return hourWord(h) + " ו-" + m + " דקות";
+  return hourWord(h) + " ו-" + m + " דקות";
+}
+function fullWords(h, m){ return "השעה " + timeWords(h, m); }
+function fmt(h, m){ return h + ":" + (m < 10 ? "0" + m : "" + m); }
+
+var PRAISE = ["כל הכבוד, רומי! 🎉","מדהים! את כוכבת! ⭐","יש! בדיוק נכון! 🎊","וואו, איזה יופי! 🌈","נכון מאוד! את אלופת השעונים! 🏆"];
+var ENCOURAGE = ["כמעט! נסי שוב 💪","לא נורא, נסי עוד פעם! 😊","את יכולה! תסתכלי טוב על המחוגים 👀","עוד ניסיון אחד, רומי! 🌟"];
+
+/* =================== State =================== */
+var state = {
+  mode: "quiz",          // quiz | set | free
+  level: 1,              // 1 | 2 | 3
+  h: 3, m: 0,            // logical time shown
+  target: { h: 3, m: 0 },// target for set mode
+  stars: 0,
+  roundStars: 0,         // stars in current level streak of 5
+  busy: false
+};
+var currentHub = "clock";   // clock | logic
+function minuteOptions(){
+  if (state.level === 1) return [0];
+  if (state.level === 2) return [0, 30];
+  return [0, 15, 30, 45];
+}
+function snapMinutes(){
+  if (state.level === 1) return 0;
+  if (state.level === 2) return 30;
+  return 15;
+}
+function randomTime(notEqual){
+  var mins = minuteOptions();
+  var t;
+  do {
+    t = { h: 1 + Math.floor(Math.random() * 12), m: mins[Math.floor(Math.random() * mins.length)] };
+  } while (notEqual && t.h === notEqual.h && t.m === notEqual.m);
+  return t;
+}
+
+/* =================== Clock face build =================== */
+var SVGNS = "http://www.w3.org/2000/svg";
+var ticksG = document.getElementById("ticks");
+var numsG  = document.getElementById("numbers");
+(function buildFace(){
+  for (var i = 0; i < 60; i++){
+    var a = i * 6 * Math.PI / 180;
+    var big = i % 5 === 0;
+    var r1 = big ? 138 : 146, r2 = 152;
+    var line = document.createElementNS(SVGNS, "line");
+    line.setAttribute("x1", 180 + r1 * Math.sin(a)); line.setAttribute("y1", 180 - r1 * Math.cos(a));
+    line.setAttribute("x2", 180 + r2 * Math.sin(a)); line.setAttribute("y2", 180 - r2 * Math.cos(a));
+    line.setAttribute("class", "tick");
+    line.setAttribute("stroke-width", big ? 5 : 2.5);
+    line.setAttribute("stroke-linecap", "round");
+    line.setAttribute("opacity", big ? ".8" : ".35");
+    ticksG.appendChild(line);
+  }
+  var colors = ["#ff6b6b","#f4842b","#f0a818","#7bc950","#2ec4b6","#38a3d1","#7c6ff0","#c86dd7","#ff8fab","#e14e4e","#1a9c8f","#5f52d6"];
+  for (var n = 1; n <= 12; n++){
+    var ang = n * 30 * Math.PI / 180;
+    var r = 112;
+    var t = document.createElementNS(SVGNS, "text");
+    t.setAttribute("x", 180 + r * Math.sin(ang));
+    t.setAttribute("y", 180 - r * Math.cos(ang));
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("dominant-baseline", "central");
+    t.setAttribute("class", "num");
+    t.setAttribute("font-size", n >= 10 ? 36 : 42);
+    t.setAttribute("fill", colors[n - 1]);
+    t.textContent = n;
+    numsG.appendChild(t);
+  }
+  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches){
+    document.getElementById("faceBg").setAttribute("fill", "#2c3757");
+  }
+})();
+
+/* =================== Hands: spring animation =================== */
+var hourHand = document.getElementById("hourHand");
+var minuteHand = document.getElementById("minuteHand");
+var disp = { hA: 90, mA: 0 };     // displayed angles (deg)
+var goal = { hA: 90, mA: 0 };
+var vel  = { hA: 0, mA: 0 };
+var rafId = null, dragging = false;
+
+function targetAngles(h, m){
+  return { mA: m * 6, hA: (h % 12) * 30 + m * 0.5 };
+}
+function shortest(cur, tgt){
+  var d = (tgt - cur) % 360;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  return cur + d;
+}
+function renderHands(){
+  hourHand.setAttribute("transform", "rotate(" + disp.hA + " 180 180)");
+  minuteHand.setAttribute("transform", "rotate(" + disp.mA + " 180 180)");
+}
+function springStep(){
+  var done = true;
+  ["hA","mA"].forEach(function(k){
+    var g = shortest(disp[k], goal[k]);
+    var diff = g - disp[k];
+    vel[k] += diff * 0.045;      // spring pull
+    vel[k] *= 0.78;              // damping -> nice overshoot/settle
+    disp[k] += vel[k];
+    if (Math.abs(diff) > 0.05 || Math.abs(vel[k]) > 0.05) done = false;
+    else { disp[k] = g; vel[k] = 0; }
+  });
+  renderHands();
+  if (!done && !dragging){ rafId = requestAnimationFrame(springStep); }
+  else rafId = null;
+}
+function animateTo(h, m){
+  var a = targetAngles(h, m);
+  goal.hA = a.hA; goal.mA = a.mA;
+  if (!rafId && !dragging) rafId = requestAnimationFrame(springStep);
+}
+function setHandsNow(h, m){
+  var a = targetAngles(h, m);
+  disp.hA = a.hA; disp.mA = a.mA; goal.hA = a.hA; goal.mA = a.mA;
+  vel.hA = 0; vel.mA = 0;
+  renderHands();
+}
+renderHands();
+
+/* =================== Readout =================== */
+var digitalEl = document.getElementById("digital");
+var wordsEl = document.getElementById("timeWords");
+function updateReadout(){
+  digitalEl.textContent = fmt(state.h, state.m);
+  wordsEl.textContent = fullWords(state.h, state.m);
+}
+function setTime(h, m, animate){
+  state.h = ((h + 11) % 12) + 1;
+  state.m = ((m % 60) + 60) % 60;
+  if (animate === false) setHandsNow(state.h, state.m); else animateTo(state.h, state.m);
+  updateReadout();
+}
+
+/* =================== Audio (WebAudio, no files) =================== */
+var audioCtx = null;
+function ac(){
+  if (!audioCtx){
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ audioCtx = null; }
+  }
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+function tone(freq, start, dur, type, vol){
+  var ctx = ac(); if (!ctx) return;
+  var o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type || "sine"; o.frequency.value = freq;
+  var t = ctx.currentTime + start;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol || 0.16, t + 0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function sndPop(){ tone(660, 0, 0.12, "triangle", 0.12); }
+function sndSuccess(){ [523.25, 659.25, 783.99, 1046.5].forEach(function(f, i){ tone(f, i * 0.09, 0.32, "triangle", 0.17); }); }
+function sndGentle(){ tone(330, 0, 0.2, "sine", 0.1); tone(262, 0.14, 0.28, "sine", 0.1); }
+
+/* =================== Speech (he-IL) =================== */
+function speak(text){
+  try {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = "he-IL"; u.rate = 0.92; u.pitch = 1.15;
+    var voices = window.speechSynthesis.getVoices();
+    for (var i = 0; i < voices.length; i++){
+      if (/^he([-_]|$)/i.test(voices[i].lang)) { u.voice = voices[i]; break; }
+    }
+    window.speechSynthesis.speak(u);
+  } catch(e){ /* graceful fallback: text is already on screen */ }
+}
+if ("speechSynthesis" in window) { try { window.speechSynthesis.getVoices(); } catch(e){} }
+
+/* =================== Mascot & bubble =================== */
+var bubble = document.getElementById("bubble");
+var mascot = document.getElementById("mascot");
+var eyes = document.getElementById("eyes"), eyesHappy = document.getElementById("eyesHappy"), mouth = document.getElementById("mouth");
+function say(text, speakIt){
+  bubble.textContent = text;
+  if (speakIt) speak(text);
+}
+function mascotHappy(on){
+  eyes.style.display = on ? "none" : "";
+  eyesHappy.style.display = on ? "" : "none";
+  mouth.setAttribute("d", on ? "M48 76 Q60 90 72 76" : "M50 78 Q60 85 70 78");
+  if (on){
+    mascot.classList.remove("happy"); void mascot.getBoundingClientRect;
+    mascot.classList.add("happy");
+    setTimeout(function(){ eyes.style.display=""; eyesHappy.style.display="none"; mouth.setAttribute("d","M50 78 Q60 85 70 78"); }, 1400);
+  }
+}
+/* blink */
+setInterval(function(){
+  if (eyesHappy.style.display !== "none") return;
+  eyes.style.transform = "scaleY(.12)"; eyes.style.transformOrigin = "60px 54px";
+  setTimeout(function(){ eyes.style.transform = ""; }, 130);
+}, 3400);
+
+/* =================== Confetti =================== */
+var confettiBox = document.getElementById("confetti");
+var CONF_COLORS = ["#ff6b6b","#ffc93c","#2ec4b6","#7c6ff0","#ff8fab","#7bc950","#38a3d1"];
+function confettiBurst(){
+  for (var i = 0; i < 46; i++){
+    (function(){
+      var p = document.createElement("i");
+      var size = 7 + Math.random() * 9;
+      p.style.width = size + "px"; p.style.height = (Math.random() > .5 ? size : size * .45) + "px";
+      p.style.background = CONF_COLORS[Math.floor(Math.random() * CONF_COLORS.length)];
+      p.style.left = (8 + Math.random() * 84) + "vw";
+      if (Math.random() > .5) p.style.borderRadius = "50%";
+      confettiBox.appendChild(p);
+      var dx = (Math.random() - .5) * 260;
+      var rot = (Math.random() - .5) * 720;
+      var anim = p.animate([
+        { transform: "translate(0,-4vh) rotate(0deg)", opacity: 1 },
+        { transform: "translate(" + dx + "px, 105vh) rotate(" + rot + "deg)", opacity: .9 }
+      ], { duration: 1500 + Math.random() * 1300, easing: "cubic-bezier(.2,.7,.4,1)" });
+      anim.onfinish = function(){ p.remove(); };
+    })();
+  }
+}
+
+/* =================== Stars =================== */
+var starCountEl = document.getElementById("starCount");
+var starsPill = document.getElementById("starsPill");
+var roundStarsEl = document.getElementById("roundStars");
+var STAR_SVG = '<svg viewBox="0 0 24 24"><path fill="#ffc93c" stroke="#f0a818" stroke-width="1.2" d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg>';
+roundStarsEl.innerHTML = STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG;
+function addStar(){
+  state.stars++; state.roundStars++;
+  starCountEl.textContent = state.stars;
+  starsPill.classList.remove("pop"); void starsPill.offsetWidth; starsPill.classList.add("pop");
+  var rows = [roundStarsEl,
+    document.getElementById("logicStars"),
+    document.getElementById("mathStars"),
+    document.getElementById("readStars")];
+  rows.forEach(function(row){
+    if (!row) return;
+    for (var i = 0; i < row.children.length; i++) row.children[i].classList.toggle("on", i < state.roundStars);
+  });
+  if (state.roundStars >= 5){
+    setTimeout(function(){
+      if (currentHub === "logic") showLogicLevelUp();
+      else if (currentHub === "math") showMathLevelUp();
+      else if (currentHub === "read") showReadLevelUp();
+      else showLevelUp();
+    }, 900);
+  }
+}
+function resetRoundStars(){
+  state.roundStars = 0;
+  [roundStarsEl,
+   document.getElementById("logicStars"),
+   document.getElementById("mathStars"),
+   document.getElementById("readStars")].forEach(function(row){
+    if (!row) return;
+    for (var i = 0; i < row.children.length; i++) row.children[i].classList.remove("on");
+  });
+}
+
+/* level up */
+var levelUpEl = document.getElementById("levelUp");
+var levelUpBtn = document.getElementById("levelUpBtn");
+var levelUpText = document.getElementById("levelUpText");
+function showLevelUp(){
+  if (state.level >= 3){
+    levelUpText.textContent = "אלופה! סיימת את כל הרמות! 🏆⭐⭐⭐";
+    levelUpBtn.textContent = "שחקי שוב מהתחלה";
+  } else {
+    levelUpText.textContent = "מדהים! אספת 5 כוכבים ברמה " + state.level + "! 🌟";
+    levelUpBtn.textContent = "לרמה " + (state.level + 1) + " ←";
+  }
+  levelUpEl.classList.add("show");
+  confettiBurst();
+}
+levelUpBtn.addEventListener("click", function(){
+  levelUpEl.classList.remove("show");
+  resetRoundStars();
+  setLevel(state.level >= 3 ? 1 : state.level + 1);
+  sndPop();
+});
+
+/* =================== Dragging the hands =================== */
+var clockSvg = document.getElementById("clock");
+var dragHand = null;   // 'h' | 'm'
+var lastMinuteSnap = null;
+
+function pointerAngle(ev){
+  var r = clockSvg.getBoundingClientRect();
+  var x = (ev.clientX - r.left) / r.width * 360 - 180;
+  var y = (ev.clientY - r.top) / r.height * 360 - 180;
+  var deg = Math.atan2(x, -y) * 180 / Math.PI;
+  if (deg < 0) deg += 360;
+  return { deg: deg, dist: Math.sqrt(x * x + y * y) };
+}
+function canDrag(){ return state.mode === "set" || state.mode === "free"; }
+
+clockSvg.addEventListener("pointerdown", function(ev){
+  if (!canDrag() || state.busy) return;
+  ev.preventDefault();
+  var p = pointerAngle(ev);
+  dragHand = p.dist < 78 ? "h" : "m";   // inner area = short hour hand
+  dragging = true;
+  if (rafId){ cancelAnimationFrame(rafId); rafId = null; }
+  try { clockSvg.setPointerCapture(ev.pointerId); } catch(e){}
+  applyDrag(p.deg);
+});
+clockSvg.addEventListener("pointermove", function(ev){
+  if (!dragging || !dragHand) return;
+  ev.preventDefault();
+  applyDrag(pointerAngle(ev).deg);
+});
+function endDrag(){
+  if (!dragging) return;
+  dragging = false; dragHand = null;
+  /* settle hands with the spring to the logical time */
+  animateTo(state.h, state.m);
+  if (state.mode === "free") speak(fullWords(state.h, state.m));
+}
+clockSvg.addEventListener("pointerup", endDrag);
+clockSvg.addEventListener("pointercancel", endDrag);
+
+function applyDrag(deg){
+  var h = state.h, m = state.m;
+  if (state.mode === "free"){
+    if (dragHand === "m"){
+      var nm = Math.round(deg / 6 / 5) * 5 % 60;   // snap to 5 minutes in free play
+      if (nm !== m){ m = nm; sndPop(); }
+    } else {
+      var nh = Math.round((((deg % 360) / 30))) % 12;
+      h = nh === 0 ? 12 : nh;
+    }
+    /* live-follow the finger while dragging */
+    state.h = h; state.m = m;
+    var a = targetAngles(h, m);
+    if (dragHand === "m"){ disp.mA = deg; disp.hA = a.hA; }
+    else { disp.hA = deg; disp.mA = a.mA; }
+    goal.mA = a.mA; goal.hA = a.hA;
+    renderHands(); updateReadout();
+    return;
+  }
+  /* set mode: snap to the level's steps */
+  var step = snapMinutes();
+  if (dragHand === "m"){
+    if (state.level === 1){ m = 0; }
+    else {
+      var snapped = Math.round(deg / 6 / step) * step % 60;
+      if (snapped !== lastMinuteSnap){ lastMinuteSnap = snapped; sndPop(); }
+      m = snapped;
+    }
+  } else {
+    var hh = Math.round((deg % 360) / 30) % 12;
+    h = hh === 0 ? 12 : hh;
+  }
+  state.h = h; state.m = m;
+  var a2 = targetAngles(h, m);
+  disp.hA = a2.hA; disp.mA = a2.mA; goal.hA = a2.hA; goal.mA = a2.mA;
+  renderHands(); updateReadout();
+}
+
+/* =================== Quiz mode =================== */
+var answersEl = document.getElementById("answers");
+function newQuiz(){
+  levelUpEl.classList.remove("show");
+  var t = randomTime({ h: state.h, m: state.m });
+  setTime(t.h, t.m, true);
+  say("מה השעה? הסתכלי על השעון ובחרי את התשובה הנכונה!", false);
+  /* build 3 options */
+  var opts = [t];
+  var guard = 0;
+  while (opts.length < 3 && guard++ < 60){
+    var c = randomTime(null);
+    var dup = opts.some(function(o){ return o.h === c.h && o.m === c.m; });
+    if (!dup) opts.push(c);
+  }
+  opts.sort(function(){ return Math.random() - .5; });
+  answersEl.innerHTML = "";
+  opts.forEach(function(o, i){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "ans-btn c" + i;
+    b.innerHTML = '<span class="a-time">' + fmt(o.h, o.m) + '</span><span class="a-words">' + timeWords(o.h, o.m) + '</span>';
+    b.addEventListener("click", function(){ answerPicked(b, o, t); });
+    answersEl.appendChild(b);
+  });
+}
+function answerPicked(btn, picked, correct){
+  if (state.busy) return;
+  if (picked.h === correct.h && picked.m === correct.m){
+    state.busy = true;
+    btn.classList.add("correct");
+    celebrate(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
+    setTimeout(function(){ state.busy = false; if (state.mode === "quiz") newQuiz(); }, 2100);
+  } else {
+    btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
+    sndGentle();
+    say(ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)], false);
+  }
+}
+
+/* =================== Pick-the-clock mode =================== */
+function miniClockSVG(h, m, rim){
+  var mA = m * 6, hA = (h % 12) * 30 + m * 0.5;
+  var ticks = "";
+  for (var i = 0; i < 12; i++){
+    var a = i * 30 * Math.PI / 180;
+    ticks += '<line x1="' + (50 + 36 * Math.sin(a)).toFixed(1) + '" y1="' + (50 - 36 * Math.cos(a)).toFixed(1) +
+             '" x2="' + (50 + 40 * Math.sin(a)).toFixed(1) + '" y2="' + (50 - 40 * Math.cos(a)).toFixed(1) +
+             '" stroke="#5a6a8a" stroke-width="' + (i % 3 === 0 ? 2.6 : 1.4) + '" stroke-linecap="round"/>';
+  }
+  var nums = '<text x="50" y="16.5" text-anchor="middle" font-size="12" font-weight="900" fill="#22304a">12</text>' +
+             '<text x="86" y="54" text-anchor="middle" font-size="12" font-weight="900" fill="#22304a">3</text>' +
+             '<text x="50" y="90" text-anchor="middle" font-size="12" font-weight="900" fill="#22304a">6</text>' +
+             '<text x="14" y="54" text-anchor="middle" font-size="12" font-weight="900" fill="#22304a">9</text>';
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+    '<circle cx="50" cy="50" r="48" fill="' + rim + '"/>' +
+    '<circle cx="50" cy="50" r="42" fill="#fffdf5"/>' + ticks + nums +
+    '<g transform="rotate(' + hA + ' 50 50)"><line x1="50" y1="54" x2="50" y2="29" stroke="#ff6b6b" stroke-width="6.5" stroke-linecap="round"/></g>' +
+    '<g transform="rotate(' + mA + ' 50 50)"><line x1="50" y1="54" x2="50" y2="17" stroke="#2ec4b6" stroke-width="5" stroke-linecap="round"/></g>' +
+    '<circle cx="50" cy="50" r="5" fill="#ffc93c" stroke="#f0a818" stroke-width="2"/></svg>';
+}
+var pickTarget = { h: 3, m: 0 };
+function newPickRound(){
+  levelUpEl.classList.remove("show");
+  pickTarget = randomTime(null);
+  document.getElementById("pickTime").textContent = fmt(pickTarget.h, pickTarget.m);
+  document.getElementById("pickWords").textContent = timeWords(pickTarget.h, pickTarget.m);
+  say("איזה שעון מראה " + timeWords(pickTarget.h, pickTarget.m) + "? חפשי טוב בין השעונים! 🔍", false);
+  var opts = [pickTarget];
+  var guard = 0;
+  while (opts.length < 3 && guard++ < 60){
+    var c = randomTime(null);
+    var dup = opts.some(function(o){ return o.h === c.h && o.m === c.m; });
+    if (!dup) opts.push(c);
+  }
+  opts.sort(function(){ return Math.random() - .5; });
+  var rims = ["#ff8fab", "#38a3d1", "#ffc93c"];
+  var grid = document.getElementById("pickGrid");
+  grid.innerHTML = "";
+  opts.forEach(function(o, i){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "pick-btn";
+    b.setAttribute("aria-label", "שעון שמראה " + fmt(o.h, o.m));
+    b.innerHTML = miniClockSVG(o.h, o.m, rims[i % 3]);
+    b.addEventListener("click", function(){
+      if (state.busy) return;
+      if (o.h === pickTarget.h && o.m === pickTarget.m){
+        state.busy = true;
+        b.classList.add("correct");
+        celebrate(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
+        setTimeout(function(){ state.busy = false; if (state.mode === "pick" && currentHub === "clock") newPickRound(); }, 2100);
+      } else {
+        b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong");
+        sndGentle();
+        say(ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)], false);
+      }
+    });
+    grid.appendChild(b);
+  });
+}
+document.getElementById("pickSpeak").addEventListener("click", function(){
+  speak("איזה שעון מראה " + timeWords(pickTarget.h, pickTarget.m) + "?");
+});
+
+/* =================== Set mode =================== */
+var checkBtn = document.getElementById("checkBtn");
+var targetBar = document.getElementById("targetBar");
+function newSetRound(){
+  levelUpEl.classList.remove("show");
+  state.target = randomTime({ h: state.h, m: state.m });
+  document.getElementById("targetTime").textContent = fmt(state.target.h, state.target.m);
+  document.getElementById("targetWords").textContent = timeWords(state.target.h, state.target.m);
+  var start = randomTime(state.target);
+  setTime(start.h, start.m, true);
+  lastMinuteSnap = start.m;
+  say("שימי את המחוגים על השעה " + timeWords(state.target.h, state.target.m) + "! גררי את המחוגים 🎯", false);
+}
+checkBtn.addEventListener("click", function(){
+  if (state.busy || state.mode !== "set") return;
+  if (state.h === state.target.h && state.m === state.target.m){
+    state.busy = true;
+    celebrate("יש! השעון מראה בדיוק " + timeWords(state.target.h, state.target.m) + "! 🎉");
+    setTimeout(function(){ state.busy = false; if (state.mode === "set") newSetRound(); }, 2100);
+  } else {
+    sndGentle();
+    clockSvg.style.animation = "none"; void clockSvg.offsetWidth;
+    clockSvg.style.animation = "";
+    var hintTxt = "";
+    if (state.h !== state.target.h) hintTxt = "המחוג האדום הקצר צריך להצביע על ה-" + state.target.h + ". ";
+    if (state.m !== state.target.m) hintTxt += state.target.m === 0 ? "המחוג הירוק הארוך צריך להצביע בדיוק למעלה, על ה-12." :
+      state.target.m === 30 ? "המחוג הירוק הארוך צריך להצביע למטה, על ה-6." :
+      state.target.m === 15 ? "המחוג הירוק הארוך צריך להצביע על ה-3." : "המחוג הירוק הארוך צריך להצביע על ה-9.";
+    say("כמעט! " + hintTxt + " נסי שוב 💪", false);
+  }
+});
+document.getElementById("targetSpeak").addEventListener("click", function(){
+  speak("שימי את השעון על " + timeWords(state.target.h, state.target.m));
+});
+
+/* =================== Celebrate =================== */
+function celebrate(text){
+  sndSuccess();
+  confettiBurst();
+  mascotHappy(true);
+  addStar();
+  say(text, true);
+}
+
+/* =================== Mode & level switching =================== */
+var hintEl = document.getElementById("hint");
+var levelsBar = document.getElementById("levelsBar");
+var readoutEl = document.getElementById("readout");
+function setMode(mode){
+  state.mode = mode;
+  document.querySelectorAll(".mode-btn").forEach(function(b){ b.classList.toggle("active", b.dataset.mode === mode); });
+  levelUpEl.classList.remove("show");
+  resetRoundStars();
+  var isQuiz = mode === "quiz", isSet = mode === "set", isFree = mode === "free", isPick = mode === "pick";
+  answersEl.classList.toggle("hidden", !isQuiz);
+  checkBtn.classList.toggle("show", isSet);
+  targetBar.classList.toggle("show", isSet);
+  levelsBar.classList.toggle("hidden", isFree);
+  readoutEl.style.display = (isQuiz || isPick) ? "none" : "";
+  document.getElementById("roundStars").style.display = isFree ? "none" : "";
+  document.getElementById("pickArea").classList.toggle("show", isPick);
+  document.querySelector(".clock-wrap").style.display = isPick ? "none" : "";
+  if (isQuiz){
+    hintEl.textContent = "הסתכלי על המחוגים: האדום הקצר מראה את השעה, הירוק הארוך מראה את הדקות.";
+    newQuiz();
+  } else if (isPick){
+    hintEl.textContent = "שלושה שעונים — רק אחד מראה את השעה הנכונה. הסתכלי טוב על המחוגים!";
+    newPickRound();
+  } else if (isSet){
+    hintEl.textContent = "גררי את המחוג האדום הקצר לשעה, ואת המחוג הירוק הארוך לדקות. אחר כך לחצי על «בדקי אותי!»";
+    newSetRound();
+  } else {
+    hintEl.textContent = "משחק חופשי! גררי את המחוגים לאן שתרצי ותגלי מה השעה. המחוג הקצר = שעות, הארוך = דקות.";
+    say("משחק חופשי! גררי את המחוגים ותגלי איזו שעה יצאה! 🌀", false);
+    setTime(state.h, state.m, true);
+  }
+}
+document.querySelectorAll(".mode-btn").forEach(function(b){
+  b.addEventListener("click", function(){ ac(); sndPop(); setMode(b.dataset.mode); });
+});
+function setLevel(lv){
+  state.level = lv;
+  document.querySelectorAll("#levelsBar .level-btn").forEach(function(b){ b.classList.toggle("active", +b.dataset.level === lv); });
+  resetRoundStars();
+  levelUpEl.classList.remove("show");
+  if (state.mode === "quiz") newQuiz();
+  else if (state.mode === "pick") newPickRound();
+  else if (state.mode === "set") newSetRound();
+}
+document.querySelectorAll("#levelsBar .level-btn").forEach(function(b){
+  b.addEventListener("click", function(){ ac(); sndPop(); setLevel(+b.dataset.level); });
+});
+
+/* speak buttons */
+document.getElementById("speakBtn").addEventListener("click", function(){
+  ac();
+  if (state.mode === "set") speak("שימי את השעון על " + timeWords(state.target.h, state.target.m));
+  else speak(fullWords(state.h, state.m));
+});
+
+/* unlock audio on first touch anywhere */
+document.addEventListener("pointerdown", function(){ ac(); }, { once: true });
+
+/* =================== Logic game: seating order =================== */
+var KIDS = [
+  { id: "romi", name: "רומי", g: "f", shirt: "#ff6b6b", hair: "#5b3a29", skin: "#ffd9b3", style: "curls" },
+  { id: "yahli", name: "יהלי", g: "f", shirt: "#2ec4b6", hair: "#22304a", skin: "#f2b98a", style: "pony" },
+  { id: "noa", name: "נועה", g: "f", shirt: "#f0a818", hair: "#8a5a00", skin: "#ffe3c2", style: "long" },
+  { id: "dani", name: "דני", g: "m", shirt: "#7c6ff0", hair: "#3a2a1a", skin: "#e8a56f", style: "cap" }
+];
+function kidById(id){ for (var i = 0; i < KIDS.length; i++) if (KIDS[i].id === id) return KIDS[i]; return KIDS[0]; }
+function kidSVG(k){
+  var behind = "", top = "";
+  if (k.style === "long") behind = '<rect x="12" y="28" width="11" height="36" rx="5.5" fill="' + k.hair + '"/><rect x="57" y="28" width="11" height="36" rx="5.5" fill="' + k.hair + '"/>';
+  if (k.style === "pony") behind = '<circle cx="63" cy="26" r="8" fill="' + k.hair + '"/>';
+  var hairTop = '<path d="M19 35 Q18 13 40 13 Q62 13 61 35 Q54 23 40 23 Q26 23 19 35Z" fill="' + k.hair + '"/>';
+  if (k.style === "curls") top = '<circle cx="24" cy="17" r="7.5" fill="' + k.hair + '"/><circle cx="40" cy="11" r="8.5" fill="' + k.hair + '"/><circle cx="56" cy="17" r="7.5" fill="' + k.hair + '"/>';
+  if (k.style === "cap") top = '<path d="M18 31 A22 22 0 0 1 62 31 Z" fill="#38a3d1"/><rect x="12" y="29" width="56" height="6.5" rx="3.2" fill="#2b7ca8"/>';
+  return '<svg viewBox="0 0 80 92" aria-hidden="true">' + behind +
+    '<path d="M16 92 v-8 a24 15 0 0 1 48 0 v8 Z" fill="' + k.shirt + '"/>' +
+    '<circle cx="40" cy="37" r="21" fill="' + k.skin + '"/>' + hairTop + top +
+    '<circle cx="32.5" cy="39" r="2.7" fill="#22304a"/><circle cx="47.5" cy="39" r="2.7" fill="#22304a"/>' +
+    '<circle cx="33.4" cy="38" r=".9" fill="#fff"/><circle cx="48.4" cy="38" r=".9" fill="#fff"/>' +
+    '<path d="M33 47 Q40 52.5 47 47" stroke="#22304a" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="26" cy="45" r="3.6" fill="#ff8fab" opacity=".75"/><circle cx="54" cy="45" r="3.6" fill="#ff8fab" opacity=".75"/></svg>';
+}
+function kidChipHTML(id){
+  var k = kidById(id);
+  return '<span class="kid-name" style="background:' + k.shirt + '">' + k.name + '</span>';
+}
+function sits(k, fForm, mForm){ return k.g === "f" ? fForm : mForm; }
+function cluePlain(c){
+  var A = kidById(c.a), B = c.b ? kidById(c.b) : null;
+  switch (c.type){
+    case "next":     return A.name + " " + sits(A, "יושבת", "יושב") + " ליד " + B.name;
+    case "notNext":  return A.name + " " + sits(A, "לא יושבת", "לא יושב") + " ליד " + B.name;
+    case "onlyNext": return A.name + " " + sits(A, "יכולה לשבת רק", "יכול לשבת רק") + " ליד " + B.name;
+    case "atTree":   return A.name + " " + sits(A, "יושבת", "יושב") + " בקצה שליד העץ";
+    case "atSun":    return A.name + " " + sits(A, "יושבת", "יושב") + " בקצה שליד השמש";
+    case "atEnd":    return A.name + " " + sits(A, "יושבת", "יושב") + " בקצה הספסל";
+    case "middle":   return A.name + " " + sits(A, "יושבת", "יושב") + " באמצע, לא בקצה";
+  }
+  return "";
+}
+function clueHTML(c){
+  var A = kidById(c.a);
+  switch (c.type){
+    case "next":     return kidChipHTML(c.a) + " " + sits(A, "יושבת", "יושב") + " ליד " + kidChipHTML(c.b);
+    case "notNext":  return kidChipHTML(c.a) + " <b>לא</b> " + sits(A, "יושבת", "יושב") + " ליד " + kidChipHTML(c.b);
+    case "onlyNext": return kidChipHTML(c.a) + " " + sits(A, "יכולה לשבת", "יכול לשבת") + " <b>רק</b> ליד " + kidChipHTML(c.b);
+    case "atTree":   return kidChipHTML(c.a) + " " + sits(A, "יושבת", "יושב") + " בקצה שליד העץ 🌳";
+    case "atSun":    return kidChipHTML(c.a) + " " + sits(A, "יושבת", "יושב") + " בקצה שליד השמש ☀️";
+    case "atEnd":    return kidChipHTML(c.a) + " " + sits(A, "יושבת", "יושב") + " בקצה הספסל";
+    case "middle":   return kidChipHTML(c.a) + " " + sits(A, "יושבת", "יושב") + " באמצע, לא בקצה";
+  }
+  return "";
+}
+var CLUE_ICONS = {
+  next:     '<svg class="clue-ic" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#2ec4b6"/><path d="M12 20.5l5.5 5.5L28 14.5" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  notNext:  '<svg class="clue-ic" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#ff6b6b"/><path d="M13 13l14 14M27 13L13 27" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>',
+  onlyNext: '<svg class="clue-ic" viewBox="0 0 40 40"><path fill="#ffc93c" stroke="#f0a818" stroke-width="1.6" d="M20 4l4.8 9.8 10.8 1.5-7.8 7.6 1.9 10.7L20 28.5l-9.7 5.1 1.9-10.7-7.8-7.6 10.8-1.5z"/></svg>',
+  atTree:   '<svg class="clue-ic" viewBox="0 0 40 40"><rect x="17.5" y="24" width="5" height="12" rx="2" fill="#9c683a"/><circle cx="20" cy="16" r="12" fill="#3fae5a"/></svg>',
+  atSun:    '<svg class="clue-ic" viewBox="0 0 40 40"><circle cx="20" cy="20" r="8.5" fill="#ffc93c" stroke="#f0a818" stroke-width="2"/><g stroke="#f0a818" stroke-width="3" stroke-linecap="round"><path d="M20 3v4.5M20 32.5V37M3 20h4.5M32.5 20H37M8 8l3.2 3.2M28.8 28.8L32 32M32 8l-3.2 3.2M11.2 28.8L8 32"/></g></svg>',
+  atEnd:    '<svg class="clue-ic" viewBox="0 0 40 40"><rect x="4" y="24" width="32" height="7" rx="3.5" fill="#b07a45"/><circle cx="9" cy="15" r="6.5" fill="#ff8fab"/></svg>',
+  middle:   '<svg class="clue-ic" viewBox="0 0 40 40"><rect x="4" y="24" width="32" height="7" rx="3.5" fill="#b07a45"/><circle cx="20" cy="15" r="6.5" fill="#38a3d1"/></svg>'
+};
+function clueTest(c, perm){
+  var pa = perm.indexOf(c.a), n = perm.length;
+  if (c.type === "atEnd") return pa === 0 || pa === n - 1;
+  if (c.type === "middle") return pa !== 0 && pa !== n - 1;
+  if (c.type === "atTree") return pa === 0;
+  if (c.type === "atSun") return pa === n - 1;
+  var pb = perm.indexOf(c.b);
+  if (c.type === "next") return Math.abs(pa - pb) === 1;
+  if (c.type === "notNext") return Math.abs(pa - pb) !== 1;
+  if (c.type === "onlyNext"){
+    var nbs = [];
+    if (pa > 0) nbs.push(perm[pa - 1]);
+    if (pa < n - 1) nbs.push(perm[pa + 1]);
+    return nbs.length === 1 && nbs[0] === c.b;
+  }
+  return true;
+}
+function allTrueClues(sol){
+  var clues = [], n = sol.length, i, j;
+  for (i = 0; i < n; i++) for (j = i + 1; j < n; j++){
+    clues.push({ type: Math.abs(i - j) === 1 ? "next" : "notNext", a: sol[i], b: sol[j] });
+  }
+  for (i = 0; i < n; i++){
+    var a = sol[i];
+    if (i === 0 || i === n - 1){
+      clues.push({ type: "onlyNext", a: a, b: sol[i === 0 ? 1 : n - 2] });
+      clues.push({ type: i === 0 ? "atTree" : "atSun", a: a });
+      clues.push({ type: "atEnd", a: a });
+    } else {
+      clues.push({ type: "middle", a: a });
+    }
+  }
+  return clues;
+}
+function permsOf(arr){
+  if (arr.length <= 1) return [arr.slice()];
+  var out = [];
+  for (var i = 0; i < arr.length; i++){
+    var rest = arr.slice(0, i).concat(arr.slice(i + 1));
+    permsOf(rest).forEach(function(p){ out.push([arr[i]].concat(p)); });
+  }
+  return out;
+}
+function countSolutions(clues, allPerms){
+  return allPerms.filter(function(p){ return clues.every(function(c){ return clueTest(c, p); }); }).length;
+}
+function shuffled(arr){
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+function genLogicPuzzle(kidIds){
+  var allPerms = permsOf(kidIds);
+  var PRIO = { onlyNext: 0, notNext: 1, atTree: 2, atSun: 2, next: 3, atEnd: 4, middle: 5 };
+  var fallback = null;
+  for (var attempt = 0; attempt < 120; attempt++){
+    var sol = shuffled(kidIds);
+    var pool = shuffled(allTrueClues(sol));
+    pool.sort(function(x, y){ return PRIO[x.type] - PRIO[y.type]; });
+    var clues = [];
+    if (attempt % 2 === 0){
+      var nn = pool.filter(function(c){ return c.type === "notNext"; });
+      if (nn.length) clues = [nn[0]];
+    }
+    for (var i = 0; i < pool.length && clues.length < 3; i++){
+      if (clues.indexOf(pool[i]) >= 0) continue;
+      var trial = clues.concat([pool[i]]);
+      if (countSolutions(trial, allPerms) < countSolutions(clues, allPerms)) clues = trial;
+    }
+    if (countSolutions(clues, allPerms) !== 1) continue;
+    var types = clues.map(function(c){ return c.type; });
+    var rich = types.indexOf("notNext") >= 0 && types.indexOf("onlyNext") >= 0;
+    if (rich) return { solution: sol, clues: clues };
+    if (!fallback) fallback = { solution: sol, clues: clues };
+  }
+  if (fallback) return fallback;
+  /* last resort: first permutation with its positional clues */
+  var s0 = kidIds.slice();
+  return { solution: s0, clues: [{ type: "atTree", a: s0[0] }, { type: "onlyNext", a: s0[0], b: s0[1] }, { type: "atSun", a: s0[s0.length - 1] }] };
+}
+
+var logic = { level: 1, kids: [], solution: [], clues: [], placement: [], selected: null, busy: false };
+var cluesBox = document.getElementById("cluesBox");
+var chairsBox = document.getElementById("chairsBox");
+var trayBox = document.getElementById("trayBox");
+var logicLevelUpEl = document.getElementById("logicLevelUp");
+document.getElementById("logicStars").innerHTML = STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG;
+
+function showLogicLevelUp(){
+  document.getElementById("logicLevelUpText").textContent =
+    logic.level >= 2 ? "אלופה! פתרת חידות הגיון עם 4 ילדים! 🏆🧩" : "מדהים! אספת 5 כוכבים במשחקי ההגיון! 🌟";
+  document.getElementById("logicLevelUpBtn").textContent = logic.level >= 2 ? "עוד חידה ←" : "לרמה 2 — 4 ילדים ←";
+  logicLevelUpEl.classList.add("show");
+  confettiBurst();
+}
+document.getElementById("logicLevelUpBtn").addEventListener("click", function(){
+  logicLevelUpEl.classList.remove("show");
+  resetRoundStars();
+  if (logic.level < 2) setLogicLevel(2); else newLogicPuzzle();
+  sndPop();
+});
+function setLogicLevel(lv){
+  logic.level = lv;
+  document.querySelectorAll("[data-llevel]").forEach(function(b){ b.classList.toggle("active", +b.dataset.llevel === lv); });
+  newLogicPuzzle();
+}
+document.querySelectorAll("[data-llevel]").forEach(function(b){
+  b.addEventListener("click", function(){ ac(); sndPop(); setLogicLevel(+b.dataset.llevel); });
+});
+
+function newLogicPuzzle(){
+  logicLevelUpEl.classList.remove("show");
+  logic.kids = KIDS.slice(0, logic.level === 1 ? 3 : 4).map(function(k){ return k.id; });
+  var g = genLogicPuzzle(logic.kids);
+  logic.solution = g.solution;
+  logic.clues = g.clues;
+  logic.placement = logic.kids.map(function(){ return null; });
+  logic.selected = null;
+  logic.busy = false;
+  renderLogic();
+  say("חידה חדשה! קראי את הרמזים, ומצאי באיזה סדר הילדים יושבים על הספסל 🧩", false);
+}
+function renderLogic(){
+  cluesBox.innerHTML = logic.clues.map(function(c, i){
+    return '<div class="clue" data-clue="' + i + '">' + CLUE_ICONS[c.type] + '<span>' + clueHTML(c) + '</span></div>';
+  }).join("");
+  chairsBox.innerHTML = "";
+  logic.placement.forEach(function(kidId, i){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "chair" + (kidId ? " filled" : "");
+    b.setAttribute("aria-label", "כיסא " + (i + 1) + (kidId ? ": " + kidById(kidId).name : " (ריק)"));
+    b.innerHTML = '<span class="seat">' + (kidId ? kidSVG(kidById(kidId)).replace("<svg", '<svg class="kid"') :
+      '<svg class="chair-ic" viewBox="0 0 48 48"><path d="M14 6v18M34 6v18M14 24h20v6a4 4 0 01-4 4h-2v8M18 34v8" stroke="#22304a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M14 24h20" stroke="#22304a" stroke-width="4" stroke-linecap="round"/></svg>') +
+      '</span><span class="chair-num">' + (i + 1) + '</span>';
+    b.addEventListener("click", function(){ chairTapped(i); });
+    chairsBox.appendChild(b);
+  });
+  var waiting = logic.kids.filter(function(id){ return logic.placement.indexOf(id) < 0; });
+  trayBox.innerHTML = "";
+  if (!waiting.length){
+    trayBox.innerHTML = '<span class="tray-empty">כל הילדים יושבים! עכשיו בדקי אם הסדר נכון 🎉</span>';
+  }
+  waiting.forEach(function(id){
+    var k = kidById(id);
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "kid-chip" + (logic.selected === id ? " selected" : "");
+    b.setAttribute("aria-label", k.name);
+    b.innerHTML = kidSVG(k) + '<span class="k-name">' + k.name + '</span>';
+    b.addEventListener("click", function(){
+      if (logic.busy) return;
+      ac();
+      logic.selected = logic.selected === id ? null : id;
+      sndPop();
+      renderLogic();
+      if (logic.selected) say(k.name + " " + sits(k, "נבחרה", "נבחר") + "! עכשיו הקישי על הכיסא " + sits(k, "שלה", "שלו") + " 🪑", false);
+    });
+    trayBox.appendChild(b);
+  });
+}
+function chairTapped(i){
+  if (logic.busy) return;
+  ac();
+  if (logic.selected){
+    logic.placement[i] = logic.selected;
+    logic.selected = null;
+    sndPop();
+  } else if (logic.placement[i]){
+    logic.placement[i] = null;
+    sndGentle();
+  } else {
+    say("קודם בחרי ילד מהמגש למטה, ואז הקישי על הכיסא שלו 👇", false);
+    return;
+  }
+  renderLogic();
+}
+document.getElementById("logicCheck").addEventListener("click", function(){
+  if (logic.busy || currentHub !== "logic") return;
+  if (logic.placement.indexOf(null) >= 0){
+    sndGentle();
+    say("עוד לא כל הילדים יושבים על הספסל! שימי את כולם ואז בדקי שוב 🪑", false);
+    return;
+  }
+  var broken = [];
+  logic.clues.forEach(function(c, i){ if (!clueTest(c, logic.placement)) broken.push(i); });
+  if (!broken.length){
+    logic.busy = true;
+    celebrate("יש! פתרת את חידת ההגיון! הסדר נכון בדיוק! 🎉🧩");
+    setTimeout(function(){ logic.busy = false; if (currentHub === "logic") newLogicPuzzle(); }, 2500);
+  } else {
+    sndGentle();
+    broken.forEach(function(i){
+      var el = cluesBox.querySelector('[data-clue="' + i + '"]');
+      if (el){ el.classList.remove("broken"); void el.offsetWidth; el.classList.add("broken"); }
+    });
+    say("כמעט! הרמז הזה עוד לא מתקיים: " + cluePlain(logic.clues[broken[0]]) + ". נסי להחליף בין הילדים 💪", false);
+  }
+});
+document.getElementById("logicNew").addEventListener("click", function(){ ac(); sndPop(); resetRoundStars(); newLogicPuzzle(); });
+document.getElementById("logicClear").addEventListener("click", function(){
+  if (logic.busy) return;
+  logic.placement = logic.kids.map(function(){ return null; });
+  logic.selected = null;
+  sndPop();
+  renderLogic();
+  say("התחלנו מחדש! קראי את הרמזים ונסי שוב 🧩", false);
+});
+document.getElementById("cluesSpeak").addEventListener("click", function(){
+  speak("הרמזים: " + logic.clues.map(cluePlain).join(". ") + ".");
+});
+
+/* =================== Math game =================== */
+var NUM_WORDS = ["אפס","אחת","שתיים","שלוש","ארבע","חמש","שש","שבע","שמונה","תשע","עשר","אחת עשרה","שתים עשרה","שלוש עשרה","ארבע עשרה","חמש עשרה","שש עשרה","שבע עשרה","שמונה עשרה","תשע עשרה","עשרים"];
+function numWord(n){ return NUM_WORDS[n] || ("" + n); }
+var MATH_OBJECTS = [
+  { name: "תפוחים", svg: '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 13c1-4 4-7 8-7 0 4-3 7-7 7z" fill="#3fae5a"/><path d="M20 12v5" stroke="#9c683a" stroke-width="3" stroke-linecap="round"/><path d="M20 16c-3-3-12-3-14 4-1.6 6 4 14 8 14 2.4 0 3.6-1 6-1s3.6 1 6 1c4 0 9.6-8 8-14-2-7-11-7-14-4z" fill="#ff6b6b"/></svg>' },
+  { name: "כוכבים", svg: '<svg viewBox="0 0 40 40" aria-hidden="true"><path fill="#ffc93c" stroke="#f0a818" stroke-width="1.6" d="M20 3.5l4.9 10 11 1.6-8 7.7 1.9 10.9L20 28.6l-9.8 5.1 1.9-10.9-8-7.7 11-1.6z"/></svg>' },
+  { name: "בלונים", svg: '<svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="15" rx="11" ry="13" fill="#38a3d1"/><path d="M20 28l-2 3h4z" fill="#2b7ca8"/><path d="M20 31c-2 3 2 4 0 8" stroke="#5a6a8a" stroke-width="1.8" fill="none"/></svg>' },
+  { name: "לבבות", svg: '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 34S5 24.5 5 14.5C5 8.7 9.2 5.5 13.5 5.5c2.9 0 5.2 1.5 6.5 3.7 1.3-2.2 3.6-3.7 6.5-3.7 4.3 0 8.5 3.2 8.5 9C35 24.5 20 34 20 34z" fill="#ff8fab"/></svg>' }
+];
+function counterRow(n, obj){
+  var s = "";
+  for (var i = 0; i < n; i++) s += obj.svg;
+  return s;
+}
+function threeOptions(answer, maxN){
+  var opts = [answer], guard = 0;
+  while (opts.length < 3 && guard++ < 80){
+    var c = answer + [-2, -1, 1, 2, 3, -3][Math.floor(Math.random() * 6)];
+    if (c < 0 || c > maxN || opts.indexOf(c) >= 0) continue;
+    opts.push(c);
+  }
+  while (opts.length < 3) opts.push(answer + opts.length + 2);
+  return opts.sort(function(){ return Math.random() - .5; });
+}
+var math = { level: 1, busy: false, answer: 0, speakText: "" };
+var mathStage = document.getElementById("mathStage");
+var mathAnswers = document.getElementById("mathAnswers");
+document.getElementById("mathStars").innerHTML = STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG;
+var mathLevelUpEl = document.getElementById("mathLevelUp");
+
+function renderMathAnswers(){
+  var opts = threeOptions(math.answer, 25);
+  mathAnswers.innerHTML = "";
+  opts.forEach(function(o, i){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "ans-btn c" + i;
+    b.innerHTML = '<span class="a-time">' + o + '</span>';
+    b.addEventListener("click", function(){
+      if (math.busy) return;
+      if (o === math.answer){
+        math.busy = true;
+        b.classList.add("correct");
+        celebrate(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
+        setTimeout(function(){ math.busy = false; if (currentHub === "math") newMathRound(); }, 2100);
+      } else {
+        b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong");
+        sndGentle();
+        say(ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)], false);
+      }
+    });
+    mathAnswers.appendChild(b);
+  });
+}
+function mathSpeakBtn(){
+  return '<br><button class="speak-btn" id="mathSpeak" type="button" style="padding:8px 16px; min-height:48px; font-size:16px;">' +
+    '<svg viewBox="0 0 24 24" aria-hidden="true" width="22" height="22"><path fill="#fff" d="M4 9v6h4l6 5V4L8 9H4z"/><path d="M17 8.5a5 5 0 010 7M19.5 6a8.5 8.5 0 010 12" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg> שמעי</button>';
+}
+function newMathRound(){
+  mathLevelUpEl.classList.remove("show");
+  var obj = MATH_OBJECTS[Math.floor(Math.random() * MATH_OBJECTS.length)];
+  var html = "", q = "";
+  if (math.level === 1){
+    var n = 1 + Math.floor(Math.random() * 10);
+    math.answer = n;
+    math.speakText = "כמה " + obj.name + " יש כאן? ספרי אותם אחד אחד!";
+    html = '<div class="counters">' + counterRow(n, obj) + '</div>';
+    q = "כמה " + obj.name + " יש? 🤔";
+  } else if (math.level === 2){
+    var a = 1 + Math.floor(Math.random() * 5), b = 1 + Math.floor(Math.random() * 5);
+    math.answer = a + b;
+    math.speakText = "כמה זה " + numWord(a) + " ועוד " + numWord(b) + "? אפשר לספור את כל התמונות ביחד!";
+    html = '<div class="counters"><span class="counter-group">' + counterRow(a, obj) + '</span><span class="plus-sign">+</span><span class="counter-group">' + counterRow(b, obj) + '</span></div>' +
+           '<div class="eq">' + a + ' + ' + b + ' = <span class="qmark">?</span></div>';
+    q = "כמה זה " + a + " + " + b + "? ספרי את כל ה" + obj.name + " ביחד!";
+  } else {
+    var kind = Math.floor(Math.random() * 3);
+    if (kind === 0){
+      var a3 = 4 + Math.floor(Math.random() * 13), b3 = 1 + Math.floor(Math.random() * 9);
+      if (a3 + b3 > 20) b3 = 20 - a3;
+      math.answer = a3 + b3;
+      math.speakText = "כמה זה " + numWord(a3) + " ועוד " + numWord(b3) + "?";
+      html = '<div class="eq">' + a3 + ' + ' + b3 + ' = <span class="qmark">?</span></div>';
+      q = "חיבור קצת יותר גדול — את יכולה! 💪";
+    } else if (kind === 1){
+      var a4 = 6 + Math.floor(Math.random() * 13), b4 = 1 + Math.floor(Math.random() * a4);
+      math.answer = a4 - b4;
+      math.speakText = "כמה זה " + numWord(a4) + " פחות " + numWord(b4) + "?";
+      html = '<div class="eq">' + a4 + ' − ' + b4 + ' = <span class="qmark">?</span></div>';
+      q = "חיסור! מתחילים מהמספר הגדול וסופרים אחורה 🔢";
+    } else {
+      var sum = 7 + Math.floor(Math.random() * 12), a5 = 2 + Math.floor(Math.random() * (sum - 3));
+      math.answer = sum - a5;
+      math.speakText = "איזה מספר חסר? " + numWord(a5) + " ועוד כמה שווה " + numWord(sum) + "?";
+      html = '<div class="eq">' + a5 + ' + <span class="qmark">?</span> = ' + sum + '</div>';
+      q = "איזה מספר חסר כדי להגיע ל-" + sum + "? 🕵️";
+    }
+  }
+  mathStage.innerHTML = html + mathSpeakBtn();
+  document.getElementById("mathSpeak").addEventListener("click", function(){ speak(math.speakText); });
+  say(q, false);
+  renderMathAnswers();
+}
+function showMathLevelUp(){
+  document.getElementById("mathLevelUpText").textContent =
+    math.level >= 3 ? "אלופה! סיימת את כל רמות החשבון! 🏆🔢" : "מדהים! אספת 5 כוכבים בחשבון ברמה " + math.level + "! 🌟";
+  document.getElementById("mathLevelUpBtn").textContent = math.level >= 3 ? "שחקי שוב מהתחלה" : "לרמה " + (math.level + 1) + " ←";
+  mathLevelUpEl.classList.add("show");
+  confettiBurst();
+}
+document.getElementById("mathLevelUpBtn").addEventListener("click", function(){
+  mathLevelUpEl.classList.remove("show");
+  resetRoundStars();
+  setMathLevel(math.level >= 3 ? 1 : math.level + 1);
+  sndPop();
+});
+function setMathLevel(lv){
+  math.level = lv;
+  document.querySelectorAll("[data-mlevel]").forEach(function(b){ b.classList.toggle("active", +b.dataset.mlevel === lv); });
+  newMathRound();
+}
+document.querySelectorAll("[data-mlevel]").forEach(function(b){
+  b.addEventListener("click", function(){ ac(); sndPop(); setMathLevel(+b.dataset.mlevel); });
+});
+
+/* =================== Reading game =================== */
+var WORDS = [
+  { w: "דג", p: "🐟" }, { w: "חתול", p: "🐱" }, { w: "כלב", p: "🐶" }, { w: "ציפור", p: "🐦" },
+  { w: "פרה", p: "🐮" }, { w: "סוס", p: "🐴" }, { w: "ארנב", p: "🐰" }, { w: "דוב", p: "🐻" },
+  { w: "פרפר", p: "🦋" }, { w: "תפוח", p: "🍎" }, { w: "בננה", p: "🍌" }, { w: "שמש", p: "☀️" },
+  { w: "ירח", p: "🌙" }, { w: "פרח", p: "🌸" }, { w: "עץ", p: "🌳" }, { w: "בית", p: "🏠" },
+  { w: "כדור", p: "⚽" }, { w: "מכונית", p: "🚗" }, { w: "מטוס", p: "✈️" }, { w: "רכבת", p: "🚂" },
+  { w: "תות", p: "🍓" }, { w: "ענבים", p: "🍇" }, { w: "גזר", p: "🥕" }, { w: "פיל", p: "🐘" }
+];
+var FINAL_TO_REG = { "ך": "כ", "ם": "מ", "ן": "נ", "ף": "פ", "ץ": "צ" };
+var read = { level: 1, busy: false, word: null, speakText: "" };
+var readStage = document.getElementById("readStage");
+var readAnswers = document.getElementById("readAnswers");
+document.getElementById("readStars").innerHTML = STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG;
+var readLevelUpEl = document.getElementById("readLevelUp");
+
+function readSpeakBtn(){
+  return '<br><button class="speak-btn" id="readSpeak" type="button" style="padding:8px 16px; min-height:48px; font-size:16px;">' +
+    '<svg viewBox="0 0 24 24" aria-hidden="true" width="22" height="22"><path fill="#fff" d="M4 9v6h4l6 5V4L8 9H4z"/><path d="M17 8.5a5 5 0 010 7M19.5 6a8.5 8.5 0 010 12" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg> שמעי</button>';
+}
+function pickThreeWords(correct){
+  var pool = shuffled(WORDS.filter(function(x){ return x.w !== correct.w; }));
+  return shuffled([correct, pool[0], pool[1]]);
+}
+function readCorrect(btn){
+  read.busy = true;
+  btn.classList.add("correct");
+  celebrate(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
+  setTimeout(function(){ read.busy = false; if (currentHub === "read") newReadRound(); }, 2100);
+}
+function readWrong(btn){
+  btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
+  sndGentle();
+  say(ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)], false);
+}
+function newReadRound(){
+  readLevelUpEl.classList.remove("show");
+  var item = WORDS[Math.floor(Math.random() * WORDS.length)];
+  read.word = item;
+  var opts = pickThreeWords(item);
+  readAnswers.innerHTML = "";
+  if (read.level === 1){
+    var first = item.w.charAt(0);
+    var letters = [first];
+    opts.forEach(function(o){ var L = o.w.charAt(0); if (letters.indexOf(L) < 0) letters.push(L); });
+    var pool2 = shuffled(WORDS);
+    for (var i = 0; letters.length < 3 && i < pool2.length; i++){
+      var L2 = pool2[i].w.charAt(0);
+      if (letters.indexOf(L2) < 0) letters.push(L2);
+    }
+    letters = shuffled(letters);
+    readStage.innerHTML = '<div class="big-pic" aria-hidden="true">' + item.p + '</div>' +
+      '<div class="big-word"><span class="blank">?</span>' + item.w.slice(1) + '</div>' + readSpeakBtn();
+    read.speakText = "איזו אות חסרה בתחילת המילה " + item.w + "?";
+    say("איזו אות באה בהתחלה? המילה היא «" + item.w + "» — איזו אות חסרה? 🔤", false);
+    var grid = document.createElement("div");
+    grid.className = "answers";
+    letters.forEach(function(L, idx){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ans-btn letter-btn c" + idx;
+      b.innerHTML = '<span class="a-time">' + L + '</span>';
+      b.addEventListener("click", function(){ if (!read.busy){ if (L === first) readCorrect(b); else readWrong(b); } });
+      grid.appendChild(b);
+    });
+    readAnswers.appendChild(grid);
+  } else if (read.level === 2){
+    readStage.innerHTML = '<div class="big-word">' + item.w + '</div>' + readSpeakBtn();
+    read.speakText = "המילה היא " + item.w + ". איזו תמונה מתאימה?";
+    say("קראי את המילה ובחרי את התמונה הנכונה! 📖", false);
+    var pgrid = document.createElement("div");
+    pgrid.className = "pic-grid";
+    opts.forEach(function(o){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "pic-btn";
+      b.setAttribute("aria-label", o.w);
+      b.textContent = o.p;
+      b.addEventListener("click", function(){ if (!read.busy){ if (o.w === item.w) readCorrect(b); else readWrong(b); } });
+      pgrid.appendChild(b);
+    });
+    readAnswers.appendChild(pgrid);
+  } else {
+    readStage.innerHTML = '<div class="big-pic" aria-hidden="true">' + item.p + '</div>' + readSpeakBtn();
+    read.speakText = "מה רואים בתמונה? מצאי את המילה הנכונה!";
+    say("מה יש בתמונה? מצאי את המילה שמתאימה לה! 👀", false);
+    var wgrid = document.createElement("div");
+    wgrid.className = "answers";
+    opts.forEach(function(o, idx){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ans-btn word-btn c" + idx;
+      b.innerHTML = '<span class="a-time">' + o.w + '</span>';
+      b.addEventListener("click", function(){ if (!read.busy){ if (o.w === item.w) readCorrect(b); else readWrong(b); } });
+      wgrid.appendChild(b);
+    });
+    readAnswers.appendChild(wgrid);
+  }
+  document.getElementById("readSpeak").addEventListener("click", function(){ speak(read.speakText); });
+}
+function showReadLevelUp(){
+  document.getElementById("readLevelUpText").textContent =
+    read.level >= 3 ? "אלופה! סיימת את כל רמות הקריאה! 🏆📖" : "מדהים! אספת 5 כוכבים בקריאה ברמה " + read.level + "! 🌟";
+  document.getElementById("readLevelUpBtn").textContent = read.level >= 3 ? "שחקי שוב מהתחלה" : "לרמה " + (read.level + 1) + " ←";
+  readLevelUpEl.classList.add("show");
+  confettiBurst();
+}
+document.getElementById("readLevelUpBtn").addEventListener("click", function(){
+  readLevelUpEl.classList.remove("show");
+  resetRoundStars();
+  setReadLevel(read.level >= 3 ? 1 : read.level + 1);
+  sndPop();
+});
+function setReadLevel(lv){
+  read.level = lv;
+  document.querySelectorAll("[data-rlevel]").forEach(function(b){ b.classList.toggle("active", +b.dataset.rlevel === lv); });
+  newReadRound();
+}
+document.querySelectorAll("[data-rlevel]").forEach(function(b){
+  b.addEventListener("click", function(){ ac(); sndPop(); setReadLevel(+b.dataset.rlevel); });
+});
+
+/* =================== Hub switching =================== */
+var modesNav = document.querySelector(".modes");
+var clockCardEl = document.querySelector(".clock-card");
+function setHub(hub){
+  currentHub = hub;
+  document.getElementById("hubClock").classList.toggle("active", hub === "clock");
+  document.getElementById("hubLogic").classList.toggle("active", hub === "logic");
+  document.getElementById("hubMath").classList.toggle("active", hub === "math");
+  document.getElementById("hubRead").classList.toggle("active", hub === "read");
+  var isClock = hub === "clock";
+  document.getElementById("logicCard").classList.toggle("show", hub === "logic");
+  document.getElementById("mathCard").classList.toggle("show", hub === "math");
+  document.getElementById("readCard").classList.toggle("show", hub === "read");
+  modesNav.style.display = isClock ? "" : "none";
+  clockCardEl.style.display = isClock ? "" : "none";
+  targetBar.style.display = isClock ? "" : "none";
+  levelsBar.style.display = isClock ? "" : "none";
+  if (hub === "logic"){
+    if (!logic.solution.length) newLogicPuzzle();
+    else say("משחקי הגיון! קראי את הרמזים ושימי את הילדים על הספסל 🧩", false);
+  } else if (hub === "math"){
+    if (!mathStage.innerHTML) newMathRound();
+    else say("משחקי חשבון! בואי נספור ונחבר 🔢", false);
+  } else if (hub === "read"){
+    if (!readStage.innerHTML) newReadRound();
+    else say("משחקי קריאה! בואי נקרא מילים 📖", false);
+  } else {
+    setMode(state.mode);
+  }
+}
+document.getElementById("hubClock").addEventListener("click", function(){ ac(); sndPop(); setHub("clock"); });
+document.getElementById("hubLogic").addEventListener("click", function(){ ac(); sndPop(); setHub("logic"); });
+document.getElementById("hubMath").addEventListener("click", function(){ ac(); sndPop(); setHub("math"); });
+document.getElementById("hubRead").addEventListener("click", function(){ ac(); sndPop(); setHub("read"); });
+
+/* =================== Start =================== */
+setTime(3, 0, false);
+updateReadout();
+setMode("quiz");
+})();
+</script>
+</body>
+</html>
