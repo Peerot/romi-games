@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
 <link rel="icon" href="data:," />
-<title>משחק השעון של רומי</title>
+<title>משחקי רומי</title>
 <style>
   :root{
     --bg1:#aee7ff; --bg2:#fff3b0; --bg3:#ffd6ec;
@@ -363,9 +363,20 @@
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;}
   }
+
+/* A home screen, then one activity. Keep navigation away from the task. */
+[hidden]{display:none!important} .home-intro{font-size:20px;font-weight:800;text-align:center}
+.game-toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.game-toolbar button,.progress-toggle{border:0;border-radius:14px;background:white;color:var(--ink);padding:12px;font:inherit;font-weight:800;min-height:48px;cursor:pointer}
+body:not(.home-view) .progress-toggle{display:none}body:not(.home-view) .hub,body:not(.home-view) .home-intro{display:none}
+body.home-view .game-toolbar,body.home-view .modes,body.home-view .levels,body.home-view .mascot-row,body.home-view .target,body.home-view .clock-card,body.home-view .logic-card,body.home-view .math-card,body.home-view .read-card{display:none!important}
+body:not(.home-view) .modes{display:flex;gap:6px}.modes .mode-btn{padding:8px 4px;font-size:12px;min-height:48px;flex:1}.modes .mode-btn svg{display:none}
+body:not(.home-view) .mascot-row{margin:8px 0}.mascot{width:65px;height:65px;flex-shrink:0}.bubble{font-size:18px;padding:12px}
+.skill-panel{background:white;border-radius:20px;padding:18px;margin:12px 0}.skill-panel h2{font-size:20px}.skill-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eae9ea}.skill-row span:last-child{font-size:13px;color:#426b60}.storage-note{font-size:13px;line-height:1.6}.counter{display:inline-flex;cursor:pointer;user-select:none}.counter svg{width:40px;height:40px}.counter.counted{outline:3px solid #5f52d6;border-radius:12px;opacity:.6}.count-help{min-height:24px;text-align:center;font-weight:800}
+@media(max-width:500px){.math-title{margin:4px 0;font-size:22px}.math-sub{display:none}.math-card{padding:12px}.math-stage{padding:10px;margin:8px 0}.math-card .logic-levels{margin:8px 0}.math-card .level-btn{font-size:13px}.math-card .speak-btn{padding:8px;min-height:44px;font-size:15px}.math-card .answers{margin-top:8px}#mathCard .game-sub{display:none}#mathCard .stage{padding:8px;margin:6px 0}#mathCard .game-title{font-size:20px;margin:4px 0}#mathCard .level-btn{font-size:12px;padding:6px}#mathCard .speak-btn{display:inline-block;padding:6px 10px;margin:4px;min-height:40px;font-size:14px}#mathCard .counters{margin:4px 0}#mathCard .count-help:empty{display:none}#mathCard .a-time{font-size:26px}#mathCard .ans-btn{padding:8px}#mathCard .mascot-row{margin:4px}#mathCard br{display:none}.clock-card{padding:12px}.clock-wrap{margin:4px auto}.top h1{font-size:23px}.level-btn{padding:8px 5px}.mascot-row .bubble{font-size:16px}}
 </style>
 </head>
-<body>
+<body class="home-view">
 <div class="sky" aria-hidden="true">
   <div class="cloud c1"></div>
   <div class="cloud c2"></div>
@@ -373,29 +384,33 @@
 
 <div class="wrap">
   <header class="top">
-    <h1><span class="clk-emoji" aria-hidden="true">🕐</span> משחק השעון של רומי</h1>
+    <h1><span class="clk-emoji" aria-hidden="true">🕐</span> משחקי רומי</h1>
     <div class="stars-pill" id="starsPill" aria-label="כוכבים שצברת">
       <svg class="star-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="#ffc93c" stroke="#f0a818" stroke-width="1.4" d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg>
       <span id="starCount">0</span>
     </div>
   </header>
 
+  <p class="home-intro">מה נרצה לגלות היום?</p>
+  <div class="game-toolbar"><button id="homeBtn" type="button">⌂ לבית</button><span id="activityName"></span></div>
+  <button class="progress-toggle" id="progressBtn" aria-expanded="false" type="button">ההתקדמות במכשיר הזה</button>
+  <section class="skill-panel" id="skillPanel" hidden><h2>מה כבר תרגלנו?</h2><p class="storage-note">כוכבים הם פרס על התמדה, גם אחרי רמז. הצלחות עצמאיות נספרות רק בלי טעות או רמז באתגר. 4 מתוך 5 הצלחות כאלה הן סימן לתרגול מוצלח, לא אבחון או הוכחת שליטה.</p><div id="skillRows"></div><p id="storageNote" class="storage-note">המידע נשמר רק בדפדפן הזה. מחיקת נתוני הדפדפן תמחק אותו. אין שמות ואין שליחה לרשת.</p><button id="resetProgress" type="button">מחיקת ההתקדמות במכשיר</button></section>
   <!-- Game families -->
   <div class="hub" role="group" aria-label="בחירת סוג משחק">
-    <button class="hub-btn active" data-hub="clock" id="hubClock" type="button">
-      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="#fff"/><circle cx="24" cy="24" r="19" fill="none" stroke="#e14e4e" stroke-width="3"/><path d="M24 14v10l7 4" stroke="#22304a" stroke-width="3.6" fill="none" stroke-linecap="round"/><circle cx="24" cy="24" r="2.6" fill="#22304a"/></svg>
-      משחקי שעון
-      <small>לקרוא שעון בכיף</small>
+    <button class="hub-btn" data-hub="math" id="hubMath" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="6" width="36" height="36" rx="10" fill="#fff"/><text x="15" y="24" text-anchor="middle" font-size="17" font-weight="900" fill="#1a9c8f">+</text><text x="33" y="24" text-anchor="middle" font-size="17" font-weight="900" fill="#e14e4e">−</text><text x="15" y="40" text-anchor="middle" font-size="17" font-weight="900" fill="#f0a818">×</text><text x="33" y="40" text-anchor="middle" font-size="17" font-weight="900" fill="#5f52d6">=</text></svg>
+      משחקי חשבון
+      <small>סופרים ומחברים בכיף</small>
     </button>
     <button class="hub-btn" data-hub="logic" id="hubLogic" type="button">
       <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="15" cy="17" r="7" fill="#fff"/><circle cx="33" cy="17" r="7" fill="#ffd9b3"/><path d="M6 40c0-6 4-9 9-9s9 3 9 9z" fill="#fff"/><path d="M24 40c0-6 4-9 9-9s9 3 9 9z" fill="#ffd9b3"/><path d="M13 15a2 2 0 104 0M29 15a2 2 0 104 0" stroke="#22304a" stroke-width="2.4" stroke-linecap="round"/></svg>
       משחקי הגיון
       <small>מי יושב ליד מי?</small>
     </button>
-    <button class="hub-btn" data-hub="math" id="hubMath" type="button">
-      <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="6" width="36" height="36" rx="10" fill="#fff"/><text x="15" y="24" text-anchor="middle" font-size="17" font-weight="900" fill="#1a9c8f">+</text><text x="33" y="24" text-anchor="middle" font-size="17" font-weight="900" fill="#e14e4e">−</text><text x="15" y="40" text-anchor="middle" font-size="17" font-weight="900" fill="#f0a818">×</text><text x="33" y="40" text-anchor="middle" font-size="17" font-weight="900" fill="#5f52d6">=</text></svg>
-      משחקי חשבון
-      <small>סופרים ומחברים בכיף</small>
+    <button class="hub-btn active" data-hub="clock" id="hubClock" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="#fff"/><circle cx="24" cy="24" r="19" fill="none" stroke="#e14e4e" stroke-width="3"/><path d="M24 14v10l7 4" stroke="#22304a" stroke-width="3.6" fill="none" stroke-linecap="round"/><circle cx="24" cy="24" r="2.6" fill="#22304a"/></svg>
+      משחקי שעון
+      <small>לקרוא שעון בכיף</small>
     </button>
     <button class="hub-btn" data-hub="read" id="hubRead" type="button">
       <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 12c-3.4-2.6-8-3.6-14-3.4v29c6-.2 10.6.8 14 3.4 3.4-2.6 8-3.6 14-3.4v-29c-6-.2-10.6.8-14 3.4z" fill="#fff"/><path d="M24 12v29" stroke="#d96f1d" stroke-width="2.6"/><path d="M14 16c2.4-.1 4.4.3 6 1.2M14 23c2.4-.1 4.4.3 6 1.2M28 17.2c1.6-.9 3.6-1.3 6-1.2M28 24.2c1.6-.9 3.6-1.3 6-1.2" stroke="#22304a" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
@@ -584,7 +599,7 @@
   <!-- Math game -->
   <section class="math-card" id="mathCard" aria-label="משחק חשבון">
     <h2 class="game-title">🔢 חשבון בכיף</h2>
-    <p class="game-sub">סופרים, מחברים ומחסרים — בדיוק כמו במטיפיק, עם תמונות שעוזרות לספור.</p>
+    <p class="game-sub">סופרים, מחברים ומחסרים עם תמונות שעוזרות לחשוב.</p>
 
     <div class="logic-levels" role="group" aria-label="רמת קושי בחשבון">
       <button class="level-btn active" data-mlevel="1" type="button">רמה 1<small>★ ☆ ☆</small>סופרים עד 10</button>
@@ -636,6 +651,7 @@
 
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 
+<script src="learning.js"></script>
 <script>
 (function(){
 "use strict";
@@ -667,6 +683,7 @@ var state = {
   roundStars: 0,         // stars in current level streak of 5
   busy: false
 };
+var gameGeneration=0;
 var currentHub = "clock";   // clock | logic
 function minuteOptions(){
   if (state.level === 1) return [0];
@@ -686,6 +703,17 @@ function randomTime(notEqual){
   } while (notEqual && t.h === notEqual.h && t.m === notEqual.m);
   return t;
 }
+
+var progress;
+try{progress=RomiLearning.load(window.localStorage);}catch(e){progress=RomiLearning.empty();}
+state.stars=progress.stars;
+var challenge=null;
+function startChallenge(id){gameGeneration++;state.busy=false;if(typeof math!=="undefined"&&math)math.busy=false;if(typeof logic!=="undefined"&&logic)logic.busy=false;if(typeof read!=="undefined"&&read)read.busy=false;challenge={id:id,missed:false,hinted:false,done:false};}
+function noteMistake(){if(challenge)challenge.missed=true;}
+function noteHint(){if(challenge)challenge.hinted=true;}
+function persistProgress(){progress.stars=state.stars;progress.levels={clock:state.level,logic:logic.level,math:math.level,read:read.level};var ok=false;try{ok=RomiLearning.save(window.localStorage,progress);}catch(e){}document.getElementById('storageNote').textContent=ok?'נשמר רק בדפדפן הזה. מחיקת נתוני הדפדפן תמחק את המידע. אין שמות ואין שליחה לרשת.':'השמירה בדפדפן אינה זמינה. אפשר לשחק, אך ההתקדמות עלולה להימחק בסגירה.';renderProgress();}
+function renderProgress(){var rows=document.getElementById('skillRows');rows.textContent='';RomiLearning.SKILLS.forEach(function(s){var row=document.createElement('div');row.className='skill-row';var label=document.createElement('span');label.textContent=s[1];var value=document.createElement('span');var v=progress.skills[s[0]];value.textContent=RomiLearning.status(v)+(v?' · '+v.completed+' אתגרים':'');row.append(label,value);rows.appendChild(row);});}
+function finishChallenge(){if(challenge&&!challenge.done){challenge.done=true;RomiLearning.record(progress,challenge.id,!challenge.missed&&!challenge.hinted);}}
 
 /* =================== Clock face build =================== */
 var SVGNS = "http://www.w3.org/2000/svg";
@@ -885,6 +913,7 @@ var STAR_SVG = '<svg viewBox="0 0 24 24"><path fill="#ffc93c" stroke="#f0a818" s
 roundStarsEl.innerHTML = STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG + STAR_SVG;
 function addStar(){
   state.stars++; state.roundStars++;
+  persistProgress();
   starCountEl.textContent = state.stars;
   starsPill.classList.remove("pop"); void starsPill.offsetWidth; starsPill.classList.add("pop");
   var rows = [roundStarsEl,
@@ -896,7 +925,9 @@ function addStar(){
     for (var i = 0; i < row.children.length; i++) row.children[i].classList.toggle("on", i < state.roundStars);
   });
   if (state.roundStars >= 5){
+    var rewardGeneration=gameGeneration;
     setTimeout(function(){
+      if(rewardGeneration!==gameGeneration || document.body.classList.contains("home-view"))return;
       if (currentHub === "logic") showLogicLevelUp();
       else if (currentHub === "math") showMathLevelUp();
       else if (currentHub === "read") showReadLevelUp();
@@ -921,7 +952,7 @@ var levelUpBtn = document.getElementById("levelUpBtn");
 var levelUpText = document.getElementById("levelUpText");
 function showLevelUp(){
   if (state.level >= 3){
-    levelUpText.textContent = "אלופה! סיימת את כל הרמות! 🏆⭐⭐⭐";
+    levelUpText.textContent = "אלופה! תרגלת את כל הרמות! 🏆⭐⭐⭐";
     levelUpBtn.textContent = "שחקי שוב מהתחלה";
   } else {
     levelUpText.textContent = "מדהים! אספת 5 כוכבים ברמה " + state.level + "! 🌟";
@@ -933,7 +964,7 @@ function showLevelUp(){
 levelUpBtn.addEventListener("click", function(){
   levelUpEl.classList.remove("show");
   resetRoundStars();
-  setLevel(state.level >= 3 ? 1 : state.level + 1);
+  setLevel(state.level >= 3 ? 1 : state.level + 1);persistProgress();
   sndPop();
 });
 
@@ -1018,6 +1049,7 @@ function applyDrag(deg){
 /* =================== Quiz mode =================== */
 var answersEl = document.getElementById("answers");
 function newQuiz(){
+  startChallenge("clock-"+state.level);
   levelUpEl.classList.remove("show");
   var t = randomTime({ h: state.h, m: state.m });
   setTime(t.h, t.m, true);
@@ -1047,8 +1079,9 @@ function answerPicked(btn, picked, correct){
     state.busy = true;
     btn.classList.add("correct");
     celebrate(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
-    setTimeout(function(){ state.busy = false; if (state.mode === "quiz") newQuiz(); }, 2100);
+    (function(generation){setTimeout(function(){ if(generation!==gameGeneration)return; state.busy = false; if (state.mode === "quiz") newQuiz(); }, 2100);})(gameGeneration);
   } else {
+    noteMistake();
     btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
     sndGentle();
     say(ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)], false);
@@ -1078,6 +1111,7 @@ function miniClockSVG(h, m, rim){
 }
 var pickTarget = { h: 3, m: 0 };
 function newPickRound(){
+  startChallenge("clock-"+state.level);
   levelUpEl.classList.remove("show");
   pickTarget = randomTime(null);
   document.getElementById("pickTime").textContent = fmt(pickTarget.h, pickTarget.m);
@@ -1106,8 +1140,9 @@ function newPickRound(){
         state.busy = true;
         b.classList.add("correct");
         celebrate(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
-        setTimeout(function(){ state.busy = false; if (state.mode === "pick" && currentHub === "clock") newPickRound(); }, 2100);
+        (function(generation){setTimeout(function(){ if(generation!==gameGeneration)return; state.busy = false; if (state.mode === "pick" && currentHub === "clock") newPickRound(); }, 2100);})(gameGeneration);
       } else {
+        noteMistake();
         b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong");
         sndGentle();
         say(ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)], false);
@@ -1124,6 +1159,7 @@ document.getElementById("pickSpeak").addEventListener("click", function(){
 var checkBtn = document.getElementById("checkBtn");
 var targetBar = document.getElementById("targetBar");
 function newSetRound(){
+  startChallenge("clock-"+state.level);
   levelUpEl.classList.remove("show");
   state.target = randomTime({ h: state.h, m: state.m });
   document.getElementById("targetTime").textContent = fmt(state.target.h, state.target.m);
@@ -1138,11 +1174,12 @@ checkBtn.addEventListener("click", function(){
   if (state.h === state.target.h && state.m === state.target.m){
     state.busy = true;
     celebrate("יש! השעון מראה בדיוק " + timeWords(state.target.h, state.target.m) + "! 🎉");
-    setTimeout(function(){ state.busy = false; if (state.mode === "set") newSetRound(); }, 2100);
+    (function(generation){setTimeout(function(){ if(generation!==gameGeneration)return; state.busy = false; if (state.mode === "set") newSetRound(); }, 2100);})(gameGeneration);
   } else {
     sndGentle();
     clockSvg.style.animation = "none"; void clockSvg.offsetWidth;
     clockSvg.style.animation = "";
+    noteMistake();
     var hintTxt = "";
     if (state.h !== state.target.h) hintTxt = "המחוג האדום הקצר צריך להצביע על ה-" + state.target.h + ". ";
     if (state.m !== state.target.m) hintTxt += state.target.m === 0 ? "המחוג הירוק הארוך צריך להצביע בדיוק למעלה, על ה-12." :
@@ -1157,6 +1194,7 @@ document.getElementById("targetSpeak").addEventListener("click", function(){
 
 /* =================== Celebrate =================== */
 function celebrate(text){
+  finishChallenge();
   sndSuccess();
   confettiBurst();
   mascotHappy(true);
@@ -1170,6 +1208,7 @@ var levelsBar = document.getElementById("levelsBar");
 var readoutEl = document.getElementById("readout");
 function setMode(mode){
   state.mode = mode;
+  if(mode==="free"){gameGeneration++;challenge=null;state.busy=false;}
   document.querySelectorAll(".mode-btn").forEach(function(b){ b.classList.toggle("active", b.dataset.mode === mode); });
   levelUpEl.classList.remove("show");
   resetRoundStars();
@@ -1384,7 +1423,7 @@ function showLogicLevelUp(){
 document.getElementById("logicLevelUpBtn").addEventListener("click", function(){
   logicLevelUpEl.classList.remove("show");
   resetRoundStars();
-  if (logic.level < 2) setLogicLevel(2); else newLogicPuzzle();
+  if (logic.level < 2) setLogicLevel(2); else newLogicPuzzle();persistProgress();
   sndPop();
 });
 function setLogicLevel(lv){
@@ -1397,6 +1436,7 @@ document.querySelectorAll("[data-llevel]").forEach(function(b){
 });
 
 function newLogicPuzzle(){
+  startChallenge("logic-"+logic.level);
   logicLevelUpEl.classList.remove("show");
   logic.kids = KIDS.slice(0, logic.level === 1 ? 3 : 4).map(function(k){ return k.id; });
   var g = genLogicPuzzle(logic.kids);
@@ -1475,9 +1515,10 @@ document.getElementById("logicCheck").addEventListener("click", function(){
   if (!broken.length){
     logic.busy = true;
     celebrate("יש! פתרת את חידת ההגיון! הסדר נכון בדיוק! 🎉🧩");
-    setTimeout(function(){ logic.busy = false; if (currentHub === "logic") newLogicPuzzle(); }, 2500);
+    (function(generation){setTimeout(function(){ if(generation!==gameGeneration)return; logic.busy = false; if (currentHub === "logic") newLogicPuzzle(); }, 2500);})(gameGeneration);
   } else {
     sndGentle();
+    noteMistake();
     broken.forEach(function(i){
       var el = cluesBox.querySelector('[data-clue="' + i + '"]');
       if (el){ el.classList.remove("broken"); void el.offsetWidth; el.classList.add("broken"); }
@@ -1509,7 +1550,7 @@ var MATH_OBJECTS = [
 ];
 function counterRow(n, obj){
   var s = "";
-  for (var i = 0; i < n; i++) s += obj.svg;
+  for (var i = 0; i < n; i++) s += '<span class="counter">' + obj.svg + '</span>';
   return s;
 }
 function threeOptions(answer, maxN){
@@ -1542,11 +1583,12 @@ function renderMathAnswers(){
         math.busy = true;
         b.classList.add("correct");
         celebrate(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
-        setTimeout(function(){ math.busy = false; if (currentHub === "math") newMathRound(); }, 2100);
+        (function(generation){setTimeout(function(){ if(generation!==gameGeneration)return; math.busy = false; if (currentHub === "math") newMathRound(); }, 2100);})(gameGeneration);
       } else {
+        noteMistake();
         b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong");
         sndGentle();
-        say(ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)], false);
+        say(math.level===1?"ניגע בכל תמונה פעם אחת ונספור לפי הסדר. אפשר ללחוץ על התמונות כדי לסמן מה כבר ספרנו.":math.level===2?"נמנה את הקבוצה הראשונה, ואז נמשיך לספור את התמונות בקבוצה השנייה. הסימן + מחבר את שתי הקבוצות.":"נבדוק מה מבקשים: בחיסור מורידים, ובמספר חסר אפשר להתחיל מהמספר הידוע ולספור עד לסכום.", false);
       }
     });
     mathAnswers.appendChild(b);
@@ -1557,6 +1599,7 @@ function mathSpeakBtn(){
     '<svg viewBox="0 0 24 24" aria-hidden="true" width="22" height="22"><path fill="#fff" d="M4 9v6h4l6 5V4L8 9H4z"/><path d="M17 8.5a5 5 0 010 7M19.5 6a8.5 8.5 0 010 12" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg> שמעי</button>';
 }
 function newMathRound(){
+  startChallenge(math.level===1?"math-count":math.level===2?"math-add":"math-add20");
   mathLevelUpEl.classList.remove("show");
   var obj = MATH_OBJECTS[Math.floor(Math.random() * MATH_OBJECTS.length)];
   var html = "", q = "";
@@ -1583,12 +1626,14 @@ function newMathRound(){
       html = '<div class="eq">' + a3 + ' + ' + b3 + ' = <span class="qmark">?</span></div>';
       q = "חיבור קצת יותר גדול — את יכולה! 💪";
     } else if (kind === 1){
+      startChallenge("math-subtract");
       var a4 = 6 + Math.floor(Math.random() * 13), b4 = 1 + Math.floor(Math.random() * a4);
       math.answer = a4 - b4;
       math.speakText = "כמה זה " + numWord(a4) + " פחות " + numWord(b4) + "?";
       html = '<div class="eq">' + a4 + ' − ' + b4 + ' = <span class="qmark">?</span></div>';
       q = "חיסור! מתחילים מהמספר הגדול וסופרים אחורה 🔢";
     } else {
+      startChallenge("math-missing");
       var sum = 7 + Math.floor(Math.random() * 12), a5 = 2 + Math.floor(Math.random() * (sum - 3));
       math.answer = sum - a5;
       math.speakText = "איזה מספר חסר? " + numWord(a5) + " ועוד כמה שווה " + numWord(sum) + "?";
@@ -1596,14 +1641,17 @@ function newMathRound(){
       q = "איזה מספר חסר כדי להגיע ל-" + sum + "? 🕵️";
     }
   }
-  mathStage.innerHTML = html + mathSpeakBtn();
+  mathStage.innerHTML = html + mathSpeakBtn() + '<br><button id="mathHint" class="speak-btn" type="button">אפשר רמז?</button><div id="countHelp" class="count-help" aria-live="polite"></div>';
+  var count=0;
+  mathStage.querySelectorAll('.counter').forEach(function(el){el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','סימון תמונה שספרנו');el.setAttribute('aria-pressed','false');function mark(){if(el.classList.contains('counted'))return;el.classList.add('counted');el.setAttribute('aria-pressed','true');count++;document.getElementById('countHelp').textContent='ספרנו '+count;}el.addEventListener('click',mark);el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();mark();}});});
+  document.getElementById('mathHint').addEventListener('click',function(){noteHint();say(math.level===1?'סמני כל תמונה פעם אחת. המספר האחרון שנאמר הוא הכמות כולה.':math.level===2?'הסימן + אומר שמחברים. ספרי את הקבוצה הראשונה ואז המשיכי לספור את השנייה.':'בחיסור מתחילים מהכמות הראשונה ומורידים. במספר חסר סופרים מהמספר הידוע עד לסכום.',false);});
   document.getElementById("mathSpeak").addEventListener("click", function(){ speak(math.speakText); });
   say(q, false);
   renderMathAnswers();
 }
 function showMathLevelUp(){
   document.getElementById("mathLevelUpText").textContent =
-    math.level >= 3 ? "אלופה! סיימת את כל רמות החשבון! 🏆🔢" : "מדהים! אספת 5 כוכבים בחשבון ברמה " + math.level + "! 🌟";
+    math.level >= 3 ? "אלופה! תרגלת את כל רמות החשבון! 🏆🔢" : "מדהים! אספת 5 כוכבים בחשבון ברמה " + math.level + "! 🌟";
   document.getElementById("mathLevelUpBtn").textContent = math.level >= 3 ? "שחקי שוב מהתחלה" : "לרמה " + (math.level + 1) + " ←";
   mathLevelUpEl.classList.add("show");
   confettiBurst();
@@ -1611,7 +1659,7 @@ function showMathLevelUp(){
 document.getElementById("mathLevelUpBtn").addEventListener("click", function(){
   mathLevelUpEl.classList.remove("show");
   resetRoundStars();
-  setMathLevel(math.level >= 3 ? 1 : math.level + 1);
+  setMathLevel(math.level >= 3 ? 1 : math.level + 1);persistProgress();
   sndPop();
 });
 function setMathLevel(lv){
@@ -1651,14 +1699,16 @@ function readCorrect(btn){
   read.busy = true;
   btn.classList.add("correct");
   celebrate(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
-  setTimeout(function(){ read.busy = false; if (currentHub === "read") newReadRound(); }, 2100);
+  (function(generation){setTimeout(function(){ if(generation!==gameGeneration)return; read.busy = false; if (currentHub === "read") newReadRound(); }, 2100);})(gameGeneration);
 }
 function readWrong(btn){
-  btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
+  noteMistake();
+    btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
   sndGentle();
   say(ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)], false);
 }
 function newReadRound(){
+  startChallenge("read-"+read.level);
   readLevelUpEl.classList.remove("show");
   var item = WORDS[Math.floor(Math.random() * WORDS.length)];
   read.word = item;
@@ -1725,7 +1775,7 @@ function newReadRound(){
 }
 function showReadLevelUp(){
   document.getElementById("readLevelUpText").textContent =
-    read.level >= 3 ? "אלופה! סיימת את כל רמות הקריאה! 🏆📖" : "מדהים! אספת 5 כוכבים בקריאה ברמה " + read.level + "! 🌟";
+    read.level >= 3 ? "אלופה! תרגלת את כל רמות הקריאה! 🏆📖" : "מדהים! אספת 5 כוכבים בקריאה ברמה " + read.level + "! 🌟";
   document.getElementById("readLevelUpBtn").textContent = read.level >= 3 ? "שחקי שוב מהתחלה" : "לרמה " + (read.level + 1) + " ←";
   readLevelUpEl.classList.add("show");
   confettiBurst();
@@ -1733,7 +1783,7 @@ function showReadLevelUp(){
 document.getElementById("readLevelUpBtn").addEventListener("click", function(){
   readLevelUpEl.classList.remove("show");
   resetRoundStars();
-  setReadLevel(read.level >= 3 ? 1 : read.level + 1);
+  setReadLevel(read.level >= 3 ? 1 : read.level + 1);persistProgress();
   sndPop();
 });
 function setReadLevel(lv){
@@ -1749,7 +1799,14 @@ document.querySelectorAll("[data-rlevel]").forEach(function(b){
 var modesNav = document.querySelector(".modes");
 var clockCardEl = document.querySelector(".clock-card");
 function setHub(hub){
+  gameGeneration++;
   currentHub = hub;
+  document.body.classList.remove('home-view');
+  document.getElementById('skillPanel').hidden=true;
+  document.getElementById('progressBtn').setAttribute('aria-expanded','false');
+  document.getElementById('activityName').textContent={clock:'משחקי שעון',math:'משחקי חשבון',logic:'משחקי הגיון',read:'משחקי קריאה'}[hub];
+  resetRoundStars();
+  window.scrollTo(0,0);
   document.getElementById("hubClock").classList.toggle("active", hub === "clock");
   document.getElementById("hubLogic").classList.toggle("active", hub === "logic");
   document.getElementById("hubMath").classList.toggle("active", hub === "math");
@@ -1763,16 +1820,13 @@ function setHub(hub){
   targetBar.style.display = isClock ? "" : "none";
   levelsBar.style.display = isClock ? "" : "none";
   if (hub === "logic"){
-    if (!logic.solution.length) newLogicPuzzle();
-    else say("משחקי הגיון! קראי את הרמזים ושימי את הילדים על הספסל 🧩", false);
+    logic.busy=false; newLogicPuzzle();
   } else if (hub === "math"){
-    if (!mathStage.innerHTML) newMathRound();
-    else say("משחקי חשבון! בואי נספור ונחבר 🔢", false);
+    math.busy=false; newMathRound();
   } else if (hub === "read"){
-    if (!readStage.innerHTML) newReadRound();
-    else say("משחקי קריאה! בואי נקרא מילים 📖", false);
+    read.busy=false; newReadRound();
   } else {
-    setMode(state.mode);
+    state.busy=false; setMode(state.mode);
   }
 }
 document.getElementById("hubClock").addEventListener("click", function(){ ac(); sndPop(); setHub("clock"); });
@@ -1780,10 +1834,19 @@ document.getElementById("hubLogic").addEventListener("click", function(){ ac(); 
 document.getElementById("hubMath").addEventListener("click", function(){ ac(); sndPop(); setHub("math"); });
 document.getElementById("hubRead").addEventListener("click", function(){ ac(); sndPop(); setHub("read"); });
 
+document.getElementById('homeBtn').addEventListener('click',function(){gameGeneration++;document.body.classList.add('home-view');if(window.speechSynthesis)window.speechSynthesis.cancel();persistProgress();window.scrollTo(0,0);});
+document.getElementById('progressBtn').addEventListener('click',function(){var el=document.getElementById('skillPanel');el.hidden=!el.hidden;this.setAttribute('aria-expanded',String(!el.hidden));renderProgress();});
+document.getElementById('resetProgress').addEventListener('click',function(){if(!window.confirm('למחוק את כל ההתקדמות שנשמרה בדפדפן הזה?'))return;progress=RomiLearning.empty();state.stars=0;state.level=logic.level=math.level=read.level=1;setLevel(1);setLogicLevel(1);setMathLevel(1);setReadLevel(1);starCountEl.textContent='0';resetRoundStars();persistProgress();document.body.classList.add('home-view');});
+document.querySelectorAll('[data-level],[data-llevel],[data-mlevel],[data-rlevel]').forEach(function(b){b.addEventListener('click',persistProgress);});
 /* =================== Start =================== */
 setTime(3, 0, false);
 updateReadout();
+state.level=progress.levels.clock;logic.level=progress.levels.logic;math.level=progress.levels.math;read.level=progress.levels.read;
+setLevel(state.level);setLogicLevel(logic.level);setMathLevel(math.level);setReadLevel(read.level);
+starCountEl.textContent=state.stars;
+renderProgress();
 setMode("quiz");
+document.body.classList.add('home-view');
 })();
 </script>
 </body>
